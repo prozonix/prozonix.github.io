@@ -3,182 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prozon</title>
+    <title>Prozonix Arcade | 40+ Games</title>
     <style>
         :root {
-            --bg-dark: #0f0f0f;
-            --panel-bg: #1e1e1e;
+            --bg: #0f0f0f;
+            --panel: #1e1e1e;
             --accent: #00ff88;
-            --text-main: #ffffff;
-            --text-dim: #a0a0a0;
+            --text: #ffffff;
+            --search-bg: #2a2a2a;
         }
 
         body {
             margin: 0;
             display: flex;
             height: 100vh;
-            background: var(--bg-dark);
-            color: var(--text-main);
-            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
             overflow: hidden;
         }
 
-        /* Sidebar Styling */
+        /* Sidebar & Custom Scrollbar */
         nav {
-            width: 280px;
-            background: var(--panel-bg);
-            padding: 30px 20px;
+            width: 300px;
+            background: var(--panel);
+            padding: 20px;
             display: flex;
             flex-direction: column;
             border-right: 1px solid #333;
         }
 
-        .logo {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--accent);
-            margin-bottom: 40px;
-            letter-spacing: -1px;
+        .game-list { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
+        .game-list::-webkit-scrollbar { width: 5px; }
+        .game-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        .logo { font-size: 1.3rem; font-weight: 900; color: var(--accent); text-align: center; margin-bottom: 20px; cursor: pointer; }
+
+        #search {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            background: var(--search-bg); border: 1px solid #444;
+            border-radius: 8px; color: white; outline: none;
         }
 
-        .nav-label {
-            font-size: 12px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
+        .label { font-size: 10px; color: #888; text-transform: uppercase; margin: 15px 0 8px 5px; letter-spacing: 1px; }
 
-        .game-link {
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #2a2a2a;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
+        .btn {
+            padding: 12px; margin-bottom: 5px;
+            background: #252525; border-radius: 8px;
+            cursor: pointer; transition: 0.2s; border: 1px solid transparent;
+            font-size: 14px;
         }
+        .btn:hover { background: #333; border-color: var(--accent); transform: translateX(3px); }
+        .btn.active { background: var(--accent); color: #000; font-weight: bold; }
 
-        .game-link:hover {
-            background: #333;
-            border-color: var(--accent);
-            transform: translateX(5px);
+        #random-btn {
+            margin-top: 15px; padding: 12px; background: transparent;
+            border: 1px dashed var(--accent); color: var(--accent);
+            border-radius: 8px; cursor: pointer; font-weight: bold;
         }
+        #random-btn:hover { background: var(--accent); color: #000; }
 
-        .game-link.active {
-            background: var(--accent);
-            color: black;
-            font-weight: bold;
-        }
-
-        /* Main Viewport */
-        main {
-            flex-grow: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        #viewport-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #game-container {
-            flex-grow: 1;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .fullscreen-btn {
-            background: #333;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .fullscreen-btn:hover { background: #444; }
-
-        .empty-state {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: var(--text-dim);
-        }
+        /* Main View */
+        main { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        #container { flex-grow: 1; background: #000; border-radius: 15px; overflow: hidden; position: relative; border: 1px solid #333; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
 
 <nav>
-    <div class="logo">Prozonix' Arcade</div>
+    <div class="logo" onclick="location.reload()">PROZONIX ARCADE</div>
     
-    <div class="nav-label">Main Menu</div>
-    <div class="game-link" onclick="loadGame(this, 'https://slowroads.io')">Slow Roads</div>
-    <div class="game-link" onclick="loadGame(this, 'https://paper-io.com')">Paper.io</div>
-    
-    <div style="margin-top: auto;">
-        <div class="nav-label">Local Files</div>
-        <div class="game-link" onclick="loadGame(this, 'rps.html')">Classic Mini-Games</div>
+    <input type="text" id="search" placeholder="Search 40+ games..." onkeyup="filterGames()">
+
+    <div class="game-list" id="gameList">
+        <div class="label">GameSnacks (Quick Load)</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/towerman')">Tower Master</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/pixelrush')">Pixel Rush</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/discolor')">Discolor</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/bubblewoods')">Bubble Woods</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/jump-with-justin')">Jump with Justin</div>
+
+        <div class="label">Featured</div>
+        <div class="btn" onclick="load(this, 'https://hextris.io')">Hextris</div>
+        <div class="btn" onclick="load(this, 'https://slowroads.io')">Slow Roads</div>
+        <div class="btn" onclick="load(this, 'https://paper-io.com')">Paper.io</div>
+
+        <div class="label">IO Multiplayer</div>
+        <div class="btn" onclick="load(this, 'https://slither.io')">Slither.io</div>
+        <div class="btn" onclick="load(this, 'https://agar.io')">Agar.io</div>
+        <div class="btn" onclick="load(this, 'https://hole-io.com')">Hole.io</div>
+        <div class="btn" onclick="load(this, 'https://voxiom.io')">Voxiom.io</div>
+
+        <div class="label">Classic & Retro</div>
+        <div class="btn" onclick="load(this, 'https://2048game.com')">2048</div>
+        <div class="btn" onclick="load(this, 'https://www.google.com/logos/2010/pacman10-i.html')">Pac-Man</div>
+        <div class="btn" onclick="load(this, 'https://tbot.xyz/lumber/')">Lumberjack</div>
+        <div class="btn" onclick="load(this, 'https://wordlegame.org')">Wordle</div>
     </div>
+
+    <button id="random-btn" onclick="loadRandom()">🎲 Surprise Me</button>
 </nav>
 
 <main>
-    <div id="viewport-header">
-        <h2 id="current-title">Select a game</h2>
-        <button class="fullscreen-btn" onclick="toggleFullscreen()">Fullscreen ⛶</button>
+    <div class="header">
+        <h2 id="title">Select a game</h2>
+        <button onclick="document.getElementById('container').requestFullscreen()" style="cursor:pointer; background:#333; color:white; border:none; padding:8px 15px; border-radius:5px;">Fullscreen</button>
     </div>
-
-    <div id="game-container">
-        <div id="placeholder" class="empty-state">
-            <p>Select a title from the sidebar to begin.</p>
+    <div id="container">
+        <iframe id="view" src="" style="display:none;" allow="autoplay; fullscreen; keyboard"></iframe>
+        <div id="empty" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#444; text-align:center;">
+            <h3>Prozonix' Arcade</h3>
+            <p>Ready to play?</p>
         </div>
-        <iframe id="game-frame" src="" style="display:none;"></iframe>
     </div>
 </main>
 
 <script>
-    function loadGame(element, url) {
-        const frame = document.getElementById('game-frame');
-        const placeholder = document.getElementById('placeholder');
-        const title = document.getElementById('current-title');
-        
-        // Update UI
-        document.querySelectorAll('.game-link').forEach(el => el.classList.remove('active'));
-        element.classList.add('active');
-        
-        // Update Iframe
-        placeholder.style.display = 'none';
-        frame.style.display = 'block';
-        frame.src = url;
-        
-        // Update Header
-        title.innerText = element.innerText;
+    function load(el, url) {
+        const view = document.getElementById('view');
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('empty').style.display = 'none';
+        view.style.display = 'block';
+        view.src = url;
+        document.getElementById('title').innerText = el.innerText;
     }
 
-    function toggleFullscreen() {
-        const container = document.getElementById('game-container');
-        if (!document.fullscreenElement) {
-            container.requestFullscreen().catch(err => {
-                alert(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-        } else {
-            document.exitFullscreen();
-        }
+    function filterGames() {
+        let input = document.getElementById('search').value.toLowerCase();
+        let btns = document.querySelectorAll('.btn');
+        btns.forEach(btn => {
+            btn.style.display = btn.innerText.toLowerCase().includes(input) ? "block" : "none";
+        });
+    }
+
+    function loadRandom() {
+        const btns = document.querySelectorAll('.btn');
+        const randomBtn = btns[Math.floor(Math.random() * btns.length)];
+        randomBtn.click();
     }
 </script>
 
