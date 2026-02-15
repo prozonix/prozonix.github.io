@@ -3,57 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade Hub</title>
+    <title>Prozon</title>
     <style>
-        :root { --bg: #1a1a1a; --panel: #2d2d2d; --accent: #00ff88; }
-        body { margin: 0; display: flex; height: 100vh; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; }
-        
-        /* Sidebar Navigation */
-        nav { width: 250px; background: var(--panel); padding: 20px; border-right: 2px solid #444; }
-        nav h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
-        .game-link { 
-            display: block; padding: 15px; margin: 10px 0; background: #3d3d3d; 
-            border-radius: 8px; cursor: pointer; text-decoration: none; color: white; transition: 0.3s;
+        :root {
+            --bg-dark: #0f0f0f;
+            --panel-bg: #1e1e1e;
+            --accent: #00ff88;
+            --text-main: #ffffff;
+            --text-dim: #a0a0a0;
         }
-        .game-link:hover { background: var(--accent); color: black; font-weight: bold; }
 
-        /* Game Display Area */
-        main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #game-container { 
-            width: 90%; height: 80%; border: 4px solid var(--panel); border-radius: 12px;
-            background: #000; overflow: hidden; position: relative;
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, sans-serif;
+            overflow: hidden;
         }
-        iframe { width: 100%; height: 100%; border: none; }
-        .placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+
+        /* Sidebar Styling */
+        nav {
+            width: 280px;
+            background: var(--panel-bg);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 40px;
+            letter-spacing: -1px;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .game-link {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .game-link:hover {
+            background: #333;
+            border-color: var(--accent);
+            transform: translateX(5px);
+        }
+
+        .game-link.active {
+            background: var(--accent);
+            color: black;
+            font-weight: bold;
+        }
+
+        /* Main Viewport */
+        main {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #viewport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #game-container {
+            flex-grow: 1;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .fullscreen-btn {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .fullscreen-btn:hover { background: #444; }
+
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
 
 <nav>
-    <h2>Game Hub</h2>
-    <div class="game-link" onclick="loadGame('paper.html')">Paper.io Clone</div>
-    <div class="game-link" onclick="loadGame('slowroads.html')">Slow Roads (3D)</div>
-    <div class="game-link" onclick="loadGame('rps.html')">Classic Mini-Games</div>
+    <div class="logo">Prozonix' Arcade</div>
+    
+    <div class="nav-label">Main Menu</div>
+    <div class="game-link" onclick="loadGame(this, 'https://slowroads.io')">Slow Roads</div>
+    <div class="game-link" onclick="loadGame(this, 'https://paper-io.com')">Paper.io</div>
+    
+    <div style="margin-top: auto;">
+        <div class="nav-label">Local Files</div>
+        <div class="game-link" onclick="loadGame(this, 'rps.html')">Classic Mini-Games</div>
+    </div>
 </nav>
 
 <main>
+    <div id="viewport-header">
+        <h2 id="current-title">Select a game</h2>
+        <button class="fullscreen-btn" onclick="toggleFullscreen()">Fullscreen ⛶</button>
+    </div>
+
     <div id="game-container">
-        <div id="placeholder" class="placeholder">
-            <h3>Select a game to start playing</h3>
-            <p>Ready to push to GitHub?</p>
+        <div id="placeholder" class="empty-state">
+            <p>Select a title from the sidebar to begin.</p>
         </div>
         <iframe id="game-frame" src="" style="display:none;"></iframe>
     </div>
 </main>
 
 <script>
-    function loadGame(url) {
+    function loadGame(element, url) {
         const frame = document.getElementById('game-frame');
         const placeholder = document.getElementById('placeholder');
+        const title = document.getElementById('current-title');
         
+        // Update UI
+        document.querySelectorAll('.game-link').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+        
+        // Update Iframe
         placeholder.style.display = 'none';
         frame.style.display = 'block';
         frame.src = url;
+        
+        // Update Header
+        title.innerText = element.innerText;
+    }
+
+    function toggleFullscreen() {
+        const container = document.getElementById('game-container');
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
     }
 </script>
 
