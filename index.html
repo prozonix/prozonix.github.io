@@ -19,55 +19,154 @@
             height: 100vh;
             background: var(--bg);
             color: var(--text);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             overflow: hidden;
         }
 
-        /* Sidebar & Custom Scrollbar */
+        /* Sidebar Navigation */
         nav {
-            width: 300px;
+            width: 320px;
             background: var(--panel);
             padding: 20px;
             display: flex;
             flex-direction: column;
             border-right: 1px solid #333;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
         }
 
-        .game-list { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
-        .game-list::-webkit-scrollbar { width: 5px; }
-        .game-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-
-        .logo { font-size: 1.3rem; font-weight: 900; color: var(--accent); text-align: center; margin-bottom: 20px; cursor: pointer; }
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            letter-spacing: -1px;
+        }
 
         #search {
-            width: 100%; padding: 12px; margin-bottom: 15px;
-            background: var(--search-bg); border: 1px solid #444;
-            border-radius: 8px; color: white; outline: none;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: var(--search-bg);
+            border: 1px solid #444;
+            border-radius: 10px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+        #search:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+
+        .game-list { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding-right: 8px;
         }
 
-        .label { font-size: 10px; color: #888; text-transform: uppercase; margin: 15px 0 8px 5px; letter-spacing: 1px; }
+        /* Custom Scrollbar */
+        .game-list::-webkit-scrollbar { width: 5px; }
+        .game-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+        .game-list::-webkit-scrollbar-track { background: transparent; }
+
+        .label {
+            font-size: 10px;
+            color: #777;
+            text-transform: uppercase;
+            margin: 18px 0 8px 5px;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
 
         .btn {
-            padding: 12px; margin-bottom: 5px;
-            background: #252525; border-radius: 8px;
-            cursor: pointer; transition: 0.2s; border: 1px solid transparent;
+            padding: 12px 15px;
+            margin-bottom: 6px;
+            background: #252525;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
             font-size: 14px;
         }
-        .btn:hover { background: #333; border-color: var(--accent); transform: translateX(3px); }
-        .btn.active { background: var(--accent); color: #000; font-weight: bold; }
+        .btn:hover { 
+            background: #333; 
+            border-color: var(--accent); 
+            transform: translateX(5px);
+        }
+        .btn.active { 
+            background: var(--accent); 
+            color: #000; 
+            font-weight: bold; 
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
 
         #random-btn {
-            margin-top: 15px; padding: 12px; background: transparent;
-            border: 1px dashed var(--accent); color: var(--accent);
-            border-radius: 8px; cursor: pointer; font-weight: bold;
+            margin-top: 15px;
+            padding: 14px;
+            background: transparent;
+            border: 2px dashed var(--accent);
+            color: var(--accent);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: 0.3s;
         }
         #random-btn:hover { background: var(--accent); color: #000; }
 
-        /* Main View */
-        main { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        #container { flex-grow: 1; background: #000; border-radius: 15px; overflow: hidden; position: relative; border: 1px solid #333; }
+        /* Main Content Area */
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background: radial-gradient(circle at top right, #1a1a1a, #0f0f0f);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #title { margin: 0; font-size: 1.5rem; font-weight: 800; }
+
+        .fs-btn {
+            background: #333;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .fs-btn:hover { border-color: var(--accent); }
+
+        #container {
+            flex-grow: 1;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #333;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
         iframe { width: 100%; height: 100%; border: none; }
+
+        .welcome-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 80%;
+        }
+
+        .welcome-screen h1 { color: var(--accent); font-size: 3rem; margin-bottom: 10px; }
+        .welcome-screen p { color: #888; font-size: 1.1rem; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -78,28 +177,31 @@
     <input type="text" id="search" placeholder="Search 40+ games..." onkeyup="filterGames()">
 
     <div class="game-list" id="gameList">
-        <div class="label">GameSnacks (Quick Load)</div>
+        <div class="label">Best Hits</div>
         <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/towerman')">Tower Master</div>
         <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/pixelrush')">Pixel Rush</div>
         <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/discolor')">Discolor</div>
         <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/bubblewoods')">Bubble Woods</div>
-        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/jump-with-justin')">Jump with Justin</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/om-nom-run')">Om Nom Run</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/retro-drift')">Retro Drift</div>
+        <div class="btn" onclick="load(this, 'https://gamesnacks.com/embed/games/jetpack-joyride')">Jetpack Joyride</div>
 
-        <div class="label">Featured</div>
+        <div class="label">Prozonix Featured</div>
         <div class="btn" onclick="load(this, 'https://hextris.io')">Hextris</div>
         <div class="btn" onclick="load(this, 'https://slowroads.io')">Slow Roads</div>
-        <div class="btn" onclick="load(this, 'https://paper-io.com')">Paper.io</div>
+        <div class="btn" onclick="load(this, 'https://paper-io.com')">Paper.io 2</div>
 
-        <div class="label">IO Multiplayer</div>
+        <div class="label">The .IO Collection</div>
         <div class="btn" onclick="load(this, 'https://slither.io')">Slither.io</div>
         <div class="btn" onclick="load(this, 'https://agar.io')">Agar.io</div>
         <div class="btn" onclick="load(this, 'https://hole-io.com')">Hole.io</div>
-        <div class="btn" onclick="load(this, 'https://voxiom.io')">Voxiom.io</div>
+        <div class="btn" onclick="load(this, 'https://ev.io')">Ev.io</div>
+        <div class="btn" onclick="load(this, 'https://krunker.io')">Krunker.io</div>
 
-        <div class="label">Classic & Retro</div>
+        <div class="label">Puzzle & Classic</div>
         <div class="btn" onclick="load(this, 'https://2048game.com')">2048</div>
         <div class="btn" onclick="load(this, 'https://www.google.com/logos/2010/pacman10-i.html')">Pac-Man</div>
-        <div class="btn" onclick="load(this, 'https://tbot.xyz/lumber/')">Lumberjack</div>
+        <div class="btn" onclick="load(this, 'https://tetris.com/play-tetris')">Tetris</div>
         <div class="btn" onclick="load(this, 'https://wordlegame.org')">Wordle</div>
     </div>
 
@@ -108,27 +210,32 @@
 
 <main>
     <div class="header">
-        <h2 id="title">Select a game</h2>
-        <button onclick="document.getElementById('container').requestFullscreen()" style="cursor:pointer; background:#333; color:white; border:none; padding:8px 15px; border-radius:5px;">Fullscreen</button>
+        <h2 id="title">Main Deck</h2>
+        <button class="fs-btn" onclick="toggleFS()">Fullscreen ⛶</button>
     </div>
+
     <div id="container">
-        <iframe id="view" src="" style="display:none;" allow="autoplay; fullscreen; keyboard"></iframe>
-        <div id="empty" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#444; text-align:center;">
-            <h3>Prozonix' Arcade</h3>
-            <p>Ready to play?</p>
+        <div id="welcome" class="welcome-screen">
+            <h1>Welcome to the Prozonix Arcade!</h1>
+            <p>Select a title from the sidebar to begin your session.<br>Use the search bar to find specific genres.</p>
         </div>
+        <iframe id="view" src="" style="display:none;" allow="autoplay; fullscreen; keyboard"></iframe>
     </div>
 </main>
 
 <script>
     function load(el, url) {
         const view = document.getElementById('view');
+        const welcome = document.getElementById('welcome');
+        const title = document.getElementById('title');
+        
         document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('empty').style.display = 'none';
+        
+        welcome.style.display = 'none';
         view.style.display = 'block';
         view.src = url;
-        document.getElementById('title').innerText = el.innerText;
+        title.innerText = el.innerText;
     }
 
     function filterGames() {
@@ -140,9 +247,17 @@
     }
 
     function loadRandom() {
-        const btns = document.querySelectorAll('.btn');
-        const randomBtn = btns[Math.floor(Math.random() * btns.length)];
-        randomBtn.click();
+        const btns = Array.from(document.querySelectorAll('.btn')).filter(b => b.style.display !== 'none');
+        if(btns.length > 0) {
+            const randomBtn = btns[Math.floor(Math.random() * btns.length)];
+            randomBtn.click();
+        }
+    }
+
+    function toggleFS() {
+        const container = document.getElementById('container');
+        if (!document.fullscreenElement) container.requestFullscreen();
+        else document.exitFullscreen();
     }
 </script>
 
