@@ -2,169 +2,153 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fuse Highway</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JDM Arcade: Final Fix</title>
     <style>
         :root { 
             --bg: #050505; --neon-blue: #00d2ff; --neon-red: #ff0055; 
             --neon-green: #00ff88; --gold: #ffcc00; --track: #1a1a1b;
         }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             background: var(--bg); color: white; font-family: 'Courier New', monospace; 
             margin: 0; display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; height: 100vh; overflow: hidden; 
+            justify-content: center; min-height: 100vh; overflow: hidden; 
         }
+
+        /* --- UI LAYERS --- */
+        .header { width: 320px; display: flex; justify-content: space-between; align-items: center; padding: 10px; z-index: 100; }
+        #balance { font-size: 2rem; font-weight: bold; color: var(--neon-blue); }
         
-        /* Turbo Mode Visuals */
-        body.turbo-active { animation: glitch 0.1s infinite; }
-        body.turbo-active #game-board { border-color: var(--neon-green); box-shadow: 0 0 40px var(--neon-green); }
-        @keyframes glitch { 0% { transform: translate(1px,0); } 50% { transform: translate(-1px,1px); } 100% { transform: translate(0,-1px); } }
-
-        /* HUD & Settings */
-        .header { width: 340px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        #balance { font-size: 2.2rem; font-weight: bold; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
-        .settings-btn { font-size: 1.5rem; cursor: pointer; background: none; border: none; color: white; }
-
-        #game-board {
-            position: relative; width: 340px; height: 460px;
-            background: var(--track); border: 12px solid #222; border-radius: 45px;
+        #game-container {
+            position: relative; width: 320px; height: 420px;
+            background: var(--track); border: 12px solid #222; border-radius: 40px;
             display: flex; align-items: center; justify-content: center;
         }
 
-        .pit { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; z-index: 10; }
-        .slot { width: 80px; height: 80px; background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        #racers-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
 
-        .racer { position: absolute; width: 30px; height: 14px; background: var(--c); border-radius: 2px; z-index: 5; }
-        .racer::after { content: ''; position: absolute; top: -4px; left: 8px; width: 10px; height: 6px; background: #000; border: 1px solid var(--c); }
-        
-        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; width: 320px; }
-        .btn { padding: 14px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .pit { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; z-index: 10; position: relative; }
+        .slot { 
+            width: 70px; height: 70px; background: rgba(0,0,0,0.6); 
+            border: 1px solid #333; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+        }
+
+        .racer { position: absolute; width: 26px; height: 12px; background: var(--c); border-radius: 2px; will-change: transform; }
+
+        /* --- BUTTONS --- */
+        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; width: 300px; z-index: 100; }
+        .btn { padding: 12px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         #buy-btn { background: var(--neon-red); color: white; }
-        #ad-btn { background: #222; color: var(--gold); border: 1px solid var(--gold); }
+        .secondary-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .wheel-btn { background: var(--gold); color: black; }
+        .turbo-btn { background: var(--neon-green); color: black; }
 
-        /* --- SETTINGS PANEL --- */
+        /* --- POPUPS & PANELS --- */
+        .overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); z-index: 1000; display: none; 
+            flex-direction: column; align-items: center; justify-content: center; 
+        }
+        
         #settings-panel {
-            position: fixed; top: 0; right: -300px; width: 250px; height: 100%;
+            position: fixed; top: 0; right: -280px; width: 260px; height: 100%;
             background: #111; border-left: 2px solid var(--neon-blue);
-            z-index: 300; transition: 0.3s; padding: 20px;
+            z-index: 2000; transition: 0.3s; padding: 20px;
         }
         #settings-panel.open { right: 0; }
-        .setting-item { margin: 20px 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .reset-btn { background: #440000; color: #ff4444; border: 1px solid #ff4444; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* Overlays */
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 400; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        /* --- LUCKY WHEEL UI --- */
+        #wheel-container {
+            width: 260px; height: 260px; border: 5px solid var(--gold);
+            border-radius: 50%; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1);
+            background: conic-gradient(var(--neon-red) 0deg 90deg, var(--neon-blue) 90deg 180deg, var(--neon-green) 180deg 270deg, var(--gold) 270deg 360deg);
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div id="balance">$100</div>
-        <button class="settings-btn" onclick="game.toggleSettings()">⚙️</button>
+        <button onclick="game.openSettings()" style="background:none; border:none; color:white; font-size:1.5rem;">⚙️</button>
     </div>
-    <div id="turbo-timer" style="color:var(--neon-green); font-size: 0.8rem; margin-bottom: 5px; height: 15px;"></div>
 
-    <div id="game-board">
+    <div id="game-container">
         <div id="racers-layer"></div>
         <div class="pit" id="pit-grid"></div>
     </div>
 
     <div class="controls">
         <button id="buy-btn" class="btn" onclick="game.buyCar()">Buy Car ($75)</button>
-        <button id="ad-btn" class="btn" onclick="game.triggerTurboAd()">📺 Watch Ad (3X Turbo)</button>
+        <div class="secondary-btns">
+            <button class="btn wheel-btn" onclick="game.openWheel()">🎡 SPIN</button>
+            <button class="btn turbo-btn" onclick="game.triggerTurboAd()">🚀 TURBO</button>
+        </div>
+    </div>
+
+    <div id="wheel-overlay" class="overlay">
+        <h2 style="color:var(--gold)">LUCKY WHEEL</h2>
+        <div id="wheel-container"></div>
+        <button id="spin-start-btn" class="btn" style="margin-top:20px; width:200px; background:white;" onclick="game.spinWheel()">SPIN FOR $50</button>
+        <button onclick="game.closeWheel()" style="margin-top:10px; color:gray; background:none; border:none;">Close</button>
     </div>
 
     <div id="settings-panel">
-        <button onclick="game.toggleSettings()" style="background:none; border:none; color:white; float:right;">X</button>
+        <button onclick="game.closeSettings()" style="background:none; border:none; color:white; float:right;">X</button>
         <h2 style="color:var(--neon-blue);">SETTINGS</h2>
-        <div class="setting-item">
-            <p>STATS</p>
-            <small id="stat-total">Total Earned: $0</small><br>
-            <small id="stat-buys">Cars Bought: 0</small>
-        </div>
-        <div class="setting-item">
-            <p>AUTOSAVE</p>
-            <small style="color:var(--neon-green);">● Status: Online</small>
-        </div>
-        <div class="setting-item">
-            <button class="reset-btn" onclick="game.resetGame()">WIPE DATA (RESET)</button>
-        </div>
-    </div>
-
-    <div id="ad-overlay" class="overlay">
-        <div style="border: 2px solid var(--gold); padding: 25px; border-radius: 20px; text-align: center; background: #111; width: 260px;">
-            <h2 style="color:var(--gold);">TURBO SPONSOR</h2>
-            <p>3X Speed & Earnings!</p>
-            <p id="ad-timer">15s remaining...</p>
-            <button onclick="game.reqSkip()" style="color: #444; background: none; border: none; cursor:pointer;">Skip</button>
-        </div>
-    </div>
-
-    <div id="warn-modal" class="overlay" style="z-index: 500;">
-        <div style="background:#1a1a1a; border:2px solid var(--neon-red); padding:30px; border-radius:20px; text-align:center; width:250px;">
-            <h3 style="color:var(--neon-red);">STOP?</h3>
-            <p>You'll lose the boost!</p>
-            <button class="btn" style="background:var(--neon-green); width:100%;" onclick="game.resumeAd()">KEEP WATCHING</button>
-            <button class="btn" style="background:none; color:#ff4444; margin-top:10px;" onclick="game.abortAd()">CANCEL</button>
-        </div>
+        <p>Stats:</p>
+        <small id="stat-earned">Lifetime: $0</small>
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+        <button class="btn" style="background:#400; color:white; width:100%;" onclick="game.resetGame()">RESET PROGRESS</button>
     </div>
 
     <script>
         const CAR_STATS = [
-            { n: "Civic", c: "#ffffff", i: 2, spd: 1.5 },
-            { n: "GTI", c: "#ff4444", i: 5, spd: 1.8 },
-            { n: "RX-7", c: "#f1c40f", i: 12, spd: 2.1 },
-            { n: "M3", c: "#3498db", i: 30, spd: 2.4 },
-            { n: "Supra", c: "#e67e22", i: 75, spd: 2.7 },
-            { n: "911", c: "#95a5a6", i: 180, spd: 3.0 },
-            { n: "GT-R", c: "#2c3e50", i: 450, spd: 3.3 },
-            { n: "R8", c: "#111111", i: 1200, spd: 3.6 }
+            { n: "Civic", c: "#ffffff", i: 2, spd: 1.8 },
+            { n: "GTI", c: "#ff4444", i: 5, spd: 2.1 },
+            { n: "RX-7", c: "#f1c40f", i: 2.4, i: 12 },
+            { n: "M3", c: "#3498db", i: 2.7, i: 30 }
         ];
 
-        class Pro_JDM_Arcade {
+        class JDM_Final {
             constructor() {
-                const s = JSON.parse(localStorage.getItem('jdm_pro_save')) || {};
+                const s = JSON.parse(localStorage.getItem('jdm_final_save')) || {};
                 this.coins = s.coins || 100;
                 this.grid = s.grid || Array(9).fill(null);
                 this.buyCount = s.buyCount || 0;
                 this.totalEarned = s.totalEarned || 100;
-
-                this.isTurbo = false;
                 this.turboMult = 1;
                 this.activeRacers = [];
                 this.init();
             }
 
             init() {
-                this.syncRacers();
                 this.renderGrid();
+                this.syncRacers();
                 requestAnimationFrame(() => this.loop());
             }
 
-            save() {
-                localStorage.setItem('jdm_pro_save', JSON.stringify({
-                    coins: this.coins, grid: this.grid, buyCount: this.buyCount, totalEarned: this.totalEarned
-                }));
-            }
-
+            // --- UI ACTIONS ---
+            openSettings() { document.getElementById('settings-panel').classList.add('open'); }
+            closeSettings() { document.getElementById('settings-panel').classList.remove('open'); }
+            openWheel() { document.getElementById('wheel-overlay').style.display = 'flex'; }
+            closeWheel() { document.getElementById('wheel-overlay').style.display = 'none'; }
+            
             resetGame() {
-                if(confirm("Wipe all cars and coins?")) {
-                    localStorage.removeItem('jdm_pro_save');
+                if(confirm("Wipe everything?")) {
+                    localStorage.removeItem('jdm_final_save');
                     location.reload();
                 }
             }
 
-            toggleSettings() { document.getElementById('settings-panel').classList.toggle('open'); }
-
             buyCar() {
                 const cost = Math.floor(75 * Math.pow(1.3, this.buyCount));
-                const empty = this.grid.indexOf(null);
-                if (this.coins >= cost && empty !== -1) {
+                if (this.coins >= cost && this.grid.includes(null)) {
                     this.coins -= cost;
-                    this.grid[empty] = 0;
+                    this.grid[this.grid.indexOf(null)] = 0;
                     this.buyCount++;
-                    this.syncRacers();
-                    this.renderGrid();
-                    this.save();
+                    this.updateAll();
                 }
             }
 
@@ -175,12 +159,23 @@
                 if (match !== -1) {
                     this.grid[idx] = lvl + 1;
                     this.grid[match] = null;
-                    this.syncRacers();
-                    this.renderGrid();
-                    this.save();
+                    this.updateAll();
                 }
             }
 
+            updateAll() {
+                this.renderGrid();
+                this.syncRacers();
+                this.save();
+            }
+
+            save() {
+                localStorage.setItem('jdm_final_save', JSON.stringify({
+                    coins: this.coins, grid: this.grid, buyCount: this.buyCount, totalEarned: this.totalEarned
+                }));
+            }
+
+            // --- RACING ENGINE ---
             syncRacers() {
                 const layer = document.getElementById('racers-layer');
                 layer.innerHTML = '';
@@ -189,7 +184,7 @@
                     if (lvl !== null) {
                         const r = { lvl, prog: Math.random() * 1000, el: document.createElement('div') };
                         r.el.className = 'racer';
-                        r.el.style.setProperty('--c', CAR_STATS[lvl].c);
+                        r.el.style.setProperty('--c', CAR_STATS[lvl]?.c || '#fff');
                         layer.appendChild(r.el);
                         this.activeRacers.push(r);
                     }
@@ -197,31 +192,25 @@
             }
 
             loop() {
-                const W = 300, H = 420;
-                this.activeRacers.forEach(r => {
-                    r.prog += CAR_STATS[r.lvl].spd * this.turboMult;
-                    let p = r.prog % (W*2 + H*2);
-                    let x, y, ang;
-                    if (p < W) { x = p; y = 0; ang = 0; }
-                    else if (p < W+H) { x = W; y = p-W; ang = 90; }
-                    else if (p < W*2+H) { x = W-(p-(W+H)); y = H; ang = 180; }
-                    else { x = 0; y = H-(p-(W*2+H)); ang = 270; }
+                const W = 285, H = 385; // Fixed path bounds
+                const lap = (W * 2) + (H * 2);
 
-                    r.el.style.left = (x + 20) + 'px';
-                    r.el.style.top = (y + 20) + 'px';
-                    r.el.style.transform = `rotate(${ang}deg)`;
-                    
-                    if (Math.random() < 0.02) {
-                        const inc = (CAR_STATS[r.lvl].i / 50) * this.turboMult;
-                        this.coins += inc;
-                        this.totalEarned += inc;
-                    }
+                this.activeRacers.forEach(r => {
+                    r.prog += (CAR_STATS[r.lvl]?.spd || 1) * this.turboMult;
+                    let p = r.prog % lap;
+                    let x, y, ang;
+
+                    if (p < W) { x = p; y = 0; ang = 0; }
+                    else if (p < W + H) { x = W; y = p - W; ang = 90; }
+                    else if (p < (W * 2) + H) { x = W - (p - (W + H)); y = H; ang = 180; }
+                    else { x = 0; y = H - (p - (W * 2 + H)); ang = 270; }
+
+                    r.el.style.transform = `translate(${x + 5}px, ${y + 5}px) rotate(${ang}deg)`;
+                    if (Math.random() < 0.01) this.coins += (CAR_STATS[r.lvl]?.i || 1) / 50 * this.turboMult;
                 });
 
                 document.getElementById('balance').innerText = `$${Math.floor(this.coins)}`;
-                document.getElementById('stat-total').innerText = `Total Earned: $${Math.floor(this.totalEarned)}`;
-                document.getElementById('stat-buys').innerText = `Cars Bought: ${this.buyCount}`;
-                this.updateUI();
+                document.getElementById('stat-earned').innerText = `Lifetime: $${Math.floor(this.totalEarned)}`;
                 requestAnimationFrame(() => this.loop());
             }
 
@@ -231,54 +220,36 @@
                 this.grid.forEach((lvl, i) => {
                     const slot = document.createElement('div');
                     slot.className = 'slot';
-                    if (lvl !== null) slot.innerHTML = `<div class="racer" style="position:static; --c:${CAR_STATS[lvl].c}"></div>`;
+                    if (lvl !== null) slot.innerHTML = `<div class="racer" style="position:relative; --c:${CAR_STATS[lvl].c}"></div>`;
                     slot.onclick = () => this.merge(i);
                     pit.appendChild(slot);
                 });
             }
 
-            updateUI() {
-                const cost = Math.floor(75 * Math.pow(1.3, this.buyCount));
-                const btn = document.getElementById('buy-btn');
-                btn.innerText = `Buy Car ($${cost})`;
-                btn.disabled = (this.coins < cost || !this.grid.includes(null));
+            // --- WHEEL LOGIC ---
+            spinWheel() {
+                if (this.coins < 50) return alert("Need $50!");
+                this.coins -= 50;
+                const wheel = document.getElementById('wheel-container');
+                const randDeg = 1800 + Math.floor(Math.random() * 360);
+                wheel.style.transform = `rotate(${randDeg}deg)`;
+                
+                setTimeout(() => {
+                    const win = Math.floor(Math.random() * 3);
+                    if (win === 0) { this.coins += 500; alert("WON $500!"); }
+                    else if (win === 1) { this.startTurbo(30); alert("30s TURBO!"); }
+                    else { alert("Better luck next time!"); }
+                    this.save();
+                }, 4100);
             }
 
-            /* Turbo Ad Logic */
-            triggerTurboAd() {
-                this.adPaused = false; let time = 15;
-                document.getElementById('ad-overlay').style.display = 'flex';
-                this.adInterval = setInterval(() => {
-                    if (!this.adPaused) {
-                        time--;
-                        document.getElementById('ad-timer').innerText = `${time}s remaining...`;
-                        if (time <= 0) { clearInterval(this.adInterval); this.startTurbo(); }
-                    }
-                }, 1000);
+            startTurbo(sec) {
+                this.turboMult = 3;
+                setTimeout(() => { this.turboMult = 1; }, sec * 1000);
             }
-            startTurbo() {
-                document.getElementById('ad-overlay').style.display = 'none';
-                this.isTurbo = true; this.turboMult = 3;
-                let timeLeft = 300;
-                document.body.classList.add('turbo-active');
-                const t = setInterval(() => {
-                    timeLeft--;
-                    let m = Math.floor(timeLeft/60).toString().padStart(2,'0');
-                    let s = (timeLeft%60).toString().padStart(2,'0');
-                    document.getElementById('turbo-timer').innerText = `TURBO ACTIVE: ${m}:${s}`;
-                    if(timeLeft <= 0) {
-                        clearInterval(t); this.isTurbo = false; this.turboMult = 1;
-                        document.body.classList.remove('turbo-active');
-                        document.getElementById('turbo-timer').innerText = '';
-                    }
-                }, 1000);
-            }
-            reqSkip() { this.adPaused = true; document.getElementById('warn-modal').style.display = 'flex'; }
-            resumeAd() { this.adPaused = false; document.getElementById('warn-modal').style.display = 'none'; }
-            abortAd() { clearInterval(this.adInterval); document.getElementById('ad-overlay').style.display = 'none'; document.getElementById('warn-modal').style.display = 'none'; }
         }
 
-        const game = new Pro_JDM_Arcade();
+        const game = new JDM_Final();
     </script>
 </body>
 </html>
