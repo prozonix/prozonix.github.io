@@ -1,301 +1,229 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-</head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fuse Highway</title>
+    <title>Prozonix | 8-Bit Merge</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        :root { 
-            --bg: #050505; --neon-blue: #00d2ff; --neon-red: #ff0055; 
-            --neon-green: #00ff88; --gold: #ffcc00; --track: #1a1a1b;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { 
-            background: var(--bg); color: white; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; min-height: 100vh; overflow: hidden; 
+        :root {
+            --bg: #0a0a0a;
+            --blue: #00d2ff;
+            --green: #39ff14;
+            --red: #ff3131;
+            --yellow: #ffd700;
+            --panel: #1a1a1a;
         }
 
-        /* --- HEADER & HUD --- */
-        .header { width: 320px; display: flex; justify-content: space-between; align-items: center; padding: 10px; z-index: 500; }
-        #balance { font-size: 2.2rem; font-weight: bold; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0,210,255,0.5); }
-        #turbo-timer { color: var(--neon-green); font-weight: bold; font-size: 0.9rem; }
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        /* --- 8-BIT CAR SPRITE --- */
+        .car-sprite {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        /* The "Bump" on top */
+        .car-sprite::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 15px;
+            width: 20px;
+            height: 10px;
+            background: inherit;
+            border-radius: 4px 4px 0 0;
+        }
+
+        /* The "Wheels" */
+        .car-sprite::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 5px;
+            width: 40px;
+            height: 8px;
+            /* Creates two black squares for wheels */
+            background: radial-gradient(circle, #000 40%, transparent 41%) 0 0/15px 100%,
+                        radial-gradient(circle, #000 40%, transparent 41%) 25px 0/15px 100%;
+            background-repeat: no-repeat;
+        }
+
+        .lvl-1 { background: #888; }
+        .lvl-2 { background: var(--blue); box-shadow: 0 0 10px var(--blue); }
+        .lvl-3 { background: var(--green); box-shadow: 0 0 10px var(--green); }
+        .lvl-4 { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
+
+        /* --- GAME UI --- */
+        #money-display { font-size: 3rem; color: var(--blue); text-shadow: 0 0 15px var(--blue); margin: 10px; }
         
-        /* --- GAME WORLD --- */
-        #game-container {
-            position: relative; width: 320px; height: 400px;
-            background: var(--track); border: 12px solid #222; border-radius: 40px;
-            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            padding: 15px;
+            border: 5px solid var(--green);
+            border-radius: 20px;
+            background: #000;
         }
 
-        #racers-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-        .pit { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; z-index: 100; position: relative; }
-        .slot { width: 70px; height: 70px; background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .racer { position: absolute; width: 26px; height: 12px; background: var(--c); border-radius: 2px; will-change: transform; }
+        .grid.locked { filter: grayscale(1) blur(3px); pointer-events: none; border-color: #444; }
 
-        /* --- CONTROLS --- */
-        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; width: 300px; z-index: 500; }
-        .btn { padding: 14px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.1s; }
-        .btn:active { transform: scale(0.95); }
-        #buy-btn { background: var(--neon-red); color: white; }
-        #buy-btn:disabled { background: #444; color: #888; }
-        
-        .secondary-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .wheel-btn { background: var(--gold); color: black; }
-        .turbo-btn { background: var(--neon-green); color: black; }
-
-        /* --- REAL UI PANELS --- */
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        
-        #settings-panel {
-            position: fixed; top: 0; right: -300px; width: 280px; height: 100%;
-            background: #111; border-left: 3px solid var(--neon-blue);
-            z-index: 2000; transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); padding: 30px;
+        .cell {
+            background: var(--panel);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
         }
-        #settings-panel.open { right: 0; }
 
-        #wheel-visual {
-            width: 260px; height: 260px; border: 10px solid #fff; border-radius: 50%;
-            background: conic-gradient(var(--neon-red) 0 90deg, var(--neon-blue) 90deg 180deg, var(--neon-green) 180deg 270deg, var(--gold) 270deg 360deg);
-            transition: transform 3s cubic-bezier(0.15, 0, 0.15, 1);
-            position: relative; box-shadow: 0 0 30px rgba(255,255,255,0.2);
+        .controls { width: 320px; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .btn { border: none; border-radius: 10px; padding: 15px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .btn-buy { background: var(--red); color: white; }
+        .btn-secondary { flex: 1; background: #333; color: white; }
+
+        /* --- WHEEL MODAL --- */
+        #wheel-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
         }
-        #wheel-visual::after { content: '▼'; position: absolute; top: -25px; left: 50%; transform: translateX(-50%); color: white; font-size: 30px; }
+
+        .wheel {
+            width: 280px; height: 280px; border-radius: 50%; border: 5px solid white;
+            position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1);
+        }
+
+        .segment {
+            position: absolute; width: 50%; height: 50%; transform-origin: bottom right;
+            display: flex; align-items: center; justify-content: center; color: black; font-size: 10px; font-weight: bold; text-align: center;
+        }
     </style>
 </head>
 <body>
-  <div class="g-recaptcha" data-sitekey="6Lemvn0sAAAAAHvuSbL8cWEj7Ek8m4yXNcVgv_ZD"></div>
 
-    <div class="header">
-        <div id="balance">$100</div>
-        <div id="turbo-timer"></div>
-        <button onclick="game.toggleSettings(true)" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">⚙️</button>
+    <div id="captcha-box">
+        <div class="g-recaptcha" data-sitekey="6Lemvn0sAAAAAHvuSbL8cWEj7Ek8m4yXNcVgv_ZD" data-callback="verify" data-expired-callback="expire"></div>
     </div>
 
-    <div id="game-container">
-        <div id="racers-layer"></div>
-        <div class="pit" id="pit-grid"></div>
-    </div>
+    <div id="money-display">$100</div>
+    <div id="status" style="margin-bottom:10px; color: var(--yellow);">Verify to begin!</div>
+
+    <div class="grid locked" id="board">
+        </div>
 
     <div class="controls">
-        <button id="buy-btn" class="btn" onclick="game.buyCar()">Buy Car ($75)</button>
-        <div class="secondary-btns">
-            <button class="btn wheel-btn" onclick="game.toggleWheel(true)">🎡 SPIN</button>
-            <button class="btn turbo-btn" onclick="game.startAd()">🚀 TURBO</button>
+        <button class="btn btn-buy" onclick="buyCar()">BUY CAR ($<span id="price">10</span>)</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" style="background:var(--yellow); color:black;" onclick="openWheel()">WHEEL</button>
+            <button class="btn btn-secondary" style="background:var(--green); color:black;" id="turbo-btn">TURBO (1X)</button>
         </div>
     </div>
 
-    <div id="settings-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 style="color:var(--neon-blue); margin:0;">SETTINGS</h2>
-            <button onclick="game.toggleSettings(false)" style="background:none; border:none; color:#555; font-size:2rem;">&times;</button>
+    <div id="wheel-overlay">
+        <div class="wheel" id="wheel-disc">
+            <div class="segment" style="background:var(--yellow); transform:rotate(0deg);"><span>3X TURBO</span></div>
+            <div class="segment" style="background:var(--blue); transform:rotate(90deg);"><span>500 COINS</span></div>
+            <div class="segment" style="background:var(--red); transform:rotate(180deg);"><span>4 CARS</span></div>
+            <div class="segment" style="background:var(--green); transform:rotate(270deg);"><span>1 HR CASH</span></div>
         </div>
-        <div style="margin: 40px 0; border-top: 1px solid #333; padding-top: 20px;">
-            <p style="color:#888; margin-bottom:5px;">STATS</p>
-            <div id="stat-earned" style="font-size:1.2rem; font-weight:bold;">Lifetime: $0</div>
-        </div>
-        <button class="btn" style="background:#500; color:white; width:100%;" onclick="game.resetData()">RESET PROGRESS</button>
-    </div>
-
-    <div id="wheel-overlay" class="overlay">
-        <h2 style="color:var(--gold); margin-bottom:30px;">LUCKY WHEEL</h2>
-        <div id="wheel-visual"></div>
-        <button id="spin-go" class="btn" style="margin-top:40px; width:220px; background:white; color:black;" onclick="game.spinWheel()">SPIN FOR $50</button>
-        <button id="wheel-close" onclick="game.toggleWheel(false)" style="margin-top:20px; color:#666; background:none; border:none; cursor:pointer;">CLOSE</button>
-    </div>
-
-    <div id="ad-overlay" class="overlay">
-        <div style="text-align:center; background:#111; padding:40px; border-radius:30px; border:2px solid var(--gold);">
-            <p style="color:var(--gold); letter-spacing:2px;">SPONSORED BOOST</p>
-            <h1 id="ad-countdown" style="font-size:4rem; margin:10px 0;">2</h1>
-            <p style="color:#666;">Turbo activating...</p>
-        </div>
+        <button class="btn btn-buy" style="margin-top:20px; width:200px;" onclick="spin()">SPIN ($50)</button>
+        <button class="btn" style="background:none; color:white;" onclick="closeWheel()">CLOSE</button>
     </div>
 
     <script>
-        const CARS = [
-            { n: "Level 1", c: "#fff", spd: 4.5 },
-            { n: "Level 2", c: "#ff4444", spd: 5.5 },
-            { n: "Level 3", c: "#00d2ff", spd: 6.5 },
-            { n: "Level 4", c: "#00ff88", spd: 7.5 }
-        ];
+        let money = 100;
+        let carCount = 0;
+        let turbo = 1;
+        let isHuman = false;
+        let grid = Array(9).fill(0);
 
-        class JDM_Engine {
-            constructor() {
-                const s = JSON.parse(localStorage.getItem('jdm_v10_save')) || {};
-                this.coins = s.coins ?? 100;
-                this.grid = s.grid || Array(9).fill(null);
-                this.buyCount = s.buyCount || 0;
-                this.totalEarned = s.totalEarned || 100;
-                
-                this.turboMult = 1;
-                this.activeRacers = [];
-                this.isSpinning = false;
+        // Init Grid
+        const board = document.getElementById('board');
+        for(let i=0; i<9; i++) {
+            let c = document.createElement('div');
+            c.className = 'cell';
+            c.id = `cell-${i}`;
+            c.onclick = () => merge(i);
+            board.appendChild(c);
+        }
 
-                this.init();
-                setInterval(() => this.passiveIncome(), 1000);
-            }
+        function verify() { isHuman = true; board.classList.remove('locked'); document.getElementById('status').innerText = "System Active"; }
+        function expire() { isHuman = false; board.classList.add('locked'); document.getElementById('status').innerText = "Verification Required"; }
 
-            init() {
-                this.renderGrid();
-                this.syncRacers();
-                requestAnimationFrame(() => this.physicsLoop());
-            }
+        function getPrice() { return Math.floor(10 * Math.pow(1.2, carCount)); }
 
-            // --- UI TOGGLES ---
-            toggleSettings(show) { document.getElementById('settings-panel').classList.toggle('open', show); }
-            toggleWheel(show) { document.getElementById('wheel-overlay').style.display = show ? 'flex' : 'none'; }
-
-            // --- CORE ACTIONS ---
-            buyCar() {
-                const cost = Math.floor(75 * Math.pow(1.3, this.buyCount));
-                if (this.coins >= cost && this.grid.includes(null)) {
-                    this.coins -= cost;
-                    this.grid[this.grid.indexOf(null)] = 0;
-                    this.buyCount++;
-                    this.updateAll();
+        function buyCar() {
+            if(!isHuman) return;
+            let p = getPrice();
+            if(money >= p) {
+                let slot = grid.indexOf(0);
+                if(slot !== -1) {
+                    money -= p; carCount++; grid[slot] = 1; update();
                 }
-            }
-
-            merge(idx) {
-                const lvl = this.grid[idx];
-                if (lvl === null || lvl >= 3) return;
-                const match = this.grid.findIndex((l, i) => l === lvl && i !== idx);
-                if (match !== -1) {
-                    this.grid[idx] = lvl + 1;
-                    this.grid[match] = null;
-                    this.updateAll();
-                }
-            }
-
-            passiveIncome() {
-                let count = this.grid.filter(x => x !== null).length;
-                if (count > 0) {
-                    const gain = count * this.turboMult;
-                    this.coins += gain;
-                    this.totalEarned += gain;
-                    this.save();
-                }
-            }
-
-            // --- WHEEL & TURBO ---
-            spinWheel() {
-                if (this.coins < 50 || this.isSpinning) return;
-                this.coins -= 50;
-                this.isSpinning = true;
-                const visual = document.getElementById('wheel-visual');
-                const randomDeg = 1800 + Math.floor(Math.random() * 360);
-                visual.style.transform = `rotate(${randomDeg}deg)`;
-                
-                document.getElementById('spin-go').style.opacity = "0.3";
-                document.getElementById('wheel-close').style.display = "none";
-
-                setTimeout(() => {
-                    this.isSpinning = false;
-                    document.getElementById('spin-go').style.opacity = "1";
-                    document.getElementById('wheel-close').style.display = "block";
-                    const result = Math.random();
-                    if(result > 0.7) { alert("JACKPOT: $500!"); this.coins += 500; }
-                    else if(result > 0.4) { alert("3X TURBO ACTIVATED!"); this.activateTurbo(60); }
-                    else { alert("WIN: $25 (Consolation)"); this.coins += 25; }
-                    this.updateAll();
-                }, 3200);
-            }
-
-            startAd() {
-                const ad = document.getElementById('ad-overlay');
-                const timer = document.getElementById('ad-countdown');
-                ad.style.display = 'flex';
-                let time = 2;
-                timer.innerText = time;
-                const int = setInterval(() => {
-                    time--;
-                    timer.innerText = time;
-                    if(time <= 0) {
-                        clearInterval(int);
-                        ad.style.display = 'none';
-                        this.activateTurbo(180); // 3 mins
-                    }
-                }, 1000);
-            }
-
-            activateTurbo(dur) {
-                this.turboMult = 3;
-                document.getElementById('game-container').style.borderColor = "var(--neon-green)";
-                let remaining = dur;
-                const t = setInterval(() => {
-                    remaining--;
-                    document.getElementById('turbo-timer').innerText = `BOOST: ${remaining}s`;
-                    if(remaining <= 0) {
-                        clearInterval(t);
-                        this.turboMult = 1;
-                        document.getElementById('turbo-timer').innerText = "";
-                        document.getElementById('game-container').style.borderColor = "#222";
-                    }
-                }, 1000);
-            }
-
-            // --- ENGINE UTILS ---
-            updateAll() { this.renderGrid(); this.syncRacers(); this.save(); }
-            save() { 
-                localStorage.setItem('jdm_v10_save', JSON.stringify({ 
-                    coins: this.coins, grid: this.grid, buyCount: this.buyCount, totalEarned: this.totalEarned 
-                })); 
-            }
-            resetData() { if(confirm("Wipe Progress?")) { localStorage.clear(); location.reload(); } }
-
-            syncRacers() {
-                const layer = document.getElementById('racers-layer');
-                layer.innerHTML = '';
-                this.activeRacers = [];
-                this.grid.forEach(lvl => {
-                    if (lvl !== null) {
-                        const r = { lvl, prog: Math.random() * 1000, el: document.createElement('div') };
-                        r.el.className = 'racer';
-                        r.el.style.setProperty('--c', CARS[lvl].c);
-                        layer.appendChild(r.el);
-                        this.activeRacers.push(r);
-                    }
-                });
-            }
-
-            physicsLoop() {
-                const W = 284, H = 364, lap = (W * 2) + (H * 2);
-                this.activeRacers.forEach(r => {
-                    r.prog += CARS[r.lvl].spd * this.turboMult;
-                    let p = r.prog % lap, x, y, ang;
-                    if (p < W) { x = p; y = 0; ang = 0; }
-                    else if (p < W + H) { x = W; y = p - W; ang = 90; }
-                    else if (p < (W * 2) + H) { x = W - (p - (W + H)); y = H; ang = 180; }
-                    else { x = 0; y = H - (p - (W * 2 + H)); ang = 270; }
-                    r.el.style.transform = `translate(${x + 6}px, ${y + 6}px) rotate(${ang}deg)`;
-                });
-                document.getElementById('balance').innerText = `$${Math.floor(this.coins)}`;
-                document.getElementById('stat-earned').innerText = `Lifetime: $${Math.floor(this.totalEarned)}`;
-                
-                const cost = Math.floor(75 * Math.pow(1.3, this.buyCount));
-                document.getElementById('buy-btn').innerText = `Buy Car ($${cost})`;
-                document.getElementById('buy-btn').disabled = (this.coins < cost || !this.grid.includes(null));
-                
-                requestAnimationFrame(() => this.physicsLoop());
-            }
-
-            renderGrid() {
-                const pit = document.getElementById('pit-grid');
-                pit.innerHTML = '';
-                this.grid.forEach((lvl, i) => {
-                    const slot = document.createElement('div');
-                    slot.className = 'slot';
-                    if (lvl !== null) slot.innerHTML = `<div class="racer" style="position:relative; --c:${CARS[lvl].c}"></div>`;
-                    slot.onclick = () => this.merge(i);
-                    pit.appendChild(slot);
-                });
             }
         }
 
-        const game = new JDM_Engine();
+        function merge(i) {
+            // Simplified merge: click cell to merge with any identical neighbor
+            if(grid[i] === 0) return;
+            for(let n of [i+1, i-1, i+3, i-3]) {
+                if(n >= 0 && n < 9 && grid[n] === grid[i]) {
+                    grid[n]++; grid[i] = 0; update(); break;
+                }
+            }
+        }
+
+        function update() {
+            document.getElementById('money-display').innerText = `$${Math.floor(money)}`;
+            document.getElementById('price').innerText = getPrice();
+            grid.forEach((lvl, i) => {
+                const cell = document.getElementById(`cell-${i}`);
+                cell.innerHTML = lvl > 0 ? `<div class="car-sprite lvl-${lvl}"></div>` : "";
+            });
+        }
+
+        // Economy Loop
+        setInterval(() => {
+            if(!isHuman) return;
+            let income = 0;
+            grid.forEach(lvl => { if(lvl > 0) income += Math.pow(1.5, lvl-1); });
+            money += (income * turbo);
+            update();
+        }, 1000);
+
+        // Wheel functions
+        function openWheel() { document.getElementById('wheel-overlay').style.display = 'flex'; }
+        function closeWheel() { document.getElementById('wheel-overlay').style.display = 'none'; }
+        function spin() {
+            if(money < 50) return;
+            money -= 50;
+            let deg = Math.floor(Math.random() * 360) + 1800;
+            document.getElementById('wheel-disc').style.transform = `rotate(${deg}deg)`;
+            setTimeout(() => {
+                let res = deg % 360;
+                if(res < 90) turbo = 3;
+                else if(res < 180) money += 500;
+                else if(res < 270) { /* logic for 4 cars */ }
+                else { /* logic for 1 hr income */ }
+                update();
+                grecaptcha.reset(); expire(); // Force re-verify
+            }, 4000);
+        }
     </script>
 </body>
 </html>
