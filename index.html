@@ -3,227 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Prozonix | 8-Bit Merge</title>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <title>Fuse Highway / Prozonix</title>
     <style>
         :root {
-            --bg: #0a0a0a;
-            --blue: #00d2ff;
-            --green: #39ff14;
-            --red: #ff3131;
-            --yellow: #ffd700;
-            --panel: #1a1a1a;
+            --bg: #2c3e50;
+            --panel: #34495e;
+            --gold: #f1c40f;
+            --accent: #e67e22;
+            --border-thick: 4px solid #222;
         }
 
         body {
+            margin: 0; padding: 0;
             background-color: var(--bg);
             color: white;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0;
-            padding: 10px;
-            overflow-x: hidden;
+            font-family: 'Arial', sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            user-select: none; overflow-x: hidden;
         }
 
-        /* --- 8-BIT CAR SPRITE --- */
-        .car-sprite {
-            position: relative;
-            width: 50px;
-            height: 25px;
-            border-radius: 4px 4px 0 0;
-            transition: all 0.3s ease;
+        /* --- HEADER --- */
+        #header {
+            width: 100%; background: rgba(0,0,0,0.4);
+            padding: 15px 0; text-align: center;
+            font-size: 28px; font-weight: 900; color: var(--gold);
+            border-bottom: var(--border-thick); position: sticky; top: 0; z-index: 10;
         }
 
-        /* The "Bump" on top */
-        .car-sprite::before {
-            content: '';
-            position: absolute;
-            top: -8px;
-            left: 15px;
-            width: 20px;
-            height: 10px;
-            background: inherit;
-            border-radius: 4px 4px 0 0;
+        /* --- TRACK --- */
+        #track-container {
+            width: 90%; max-width: 500px; height: 140px;
+            margin: 20px 0; background: #7f8c8d;
+            border: 8px solid #bdc3c7; border-radius: 100px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* The "Wheels" */
-        .car-sprite::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 5px;
-            width: 40px;
-            height: 8px;
-            /* Creates two black squares for wheels */
-            background: radial-gradient(circle, #000 40%, transparent 41%) 0 0/15px 100%,
-                        radial-gradient(circle, #000 40%, transparent 41%) 25px 0/15px 100%;
-            background-repeat: no-repeat;
+        /* --- WHEEL --- */
+        #wheel-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        #wheel {
+            width: 160px; height: 160px; border-radius: 50%;
+            border: 6px solid #fff; position: relative;
+            transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1);
+            background: conic-gradient(
+                #f1c40f 0deg 45deg, #3498db 45deg 90deg, 
+                #9b59b6 90deg 135deg, #e74c3c 135deg 180deg,
+                #f1c40f 180deg 225deg, #3498db 225deg 270deg, 
+                #9b59b6 270deg 315deg, #e74c3c 315deg 360deg
+            );
+        }
+        #pointer {
+            width: 0; height: 0; border-left: 15px solid transparent;
+            border-right: 15px solid transparent; border-top: 20px solid #e74c3c;
+            margin-bottom: -10px; z-index: 5;
         }
 
-        .lvl-1 { background: #888; }
-        .lvl-2 { background: var(--blue); box-shadow: 0 0 10px var(--blue); }
-        .lvl-3 { background: var(--green); box-shadow: 0 0 10px var(--green); }
-        .lvl-4 { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
-
-        /* --- GAME UI --- */
-        #money-display { font-size: 3rem; color: var(--blue); text-shadow: 0 0 15px var(--blue); margin: 10px; }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            grid-template-rows: repeat(3, 100px);
-            gap: 10px;
-            padding: 15px;
-            border: 5px solid var(--green);
-            border-radius: 20px;
-            background: #000;
+        /* --- GRID --- */
+        #grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            background: var(--panel); padding: 15px; border-radius: 15px; border: var(--border-thick);
+        }
+        .slot {
+            width: 70px; height: 70px; background: rgba(0,0,0,0.2);
+            border-radius: 10px; border: 2px dashed rgba(255,255,255,0.2);
+            display: flex; justify-content: center; align-items: center;
         }
 
-        .grid.locked { filter: grayscale(1) blur(3px); pointer-events: none; border-color: #444; }
+        /* --- SHOP --- */
+        #shop-area { margin: 25px 0; text-align: center; }
+        #buy-btn {
+            background: var(--accent); color: white; border: none;
+            border-bottom: 6px solid #d35400; padding: 15px 50px;
+            font-size: 20px; font-weight: bold; border-radius: 15px; cursor: pointer;
+        }
+        #buy-btn:active { transform: translateY(4px); border-bottom-width: 2px; }
+        #buy-btn:disabled { background: #7f8c8d; border-bottom: none; cursor: not-allowed; }
 
-        .cell {
-            background: var(--panel);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #333;
+        /* --- MODALS --- */
+        .modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; color: #222; padding: 30px;
+            border-radius: 20px; width: 280px; text-align: center;
         }
 
-        .controls { width: 320px; margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .btn { border: none; border-radius: 10px; padding: 15px; font-weight: bold; cursor: pointer; font-family: inherit; }
-        .btn-buy { background: var(--red); color: white; }
-        .btn-secondary { flex: 1; background: #333; color: white; }
-
-        /* --- WHEEL MODAL --- */
-        #wheel-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        .wheel {
-            width: 280px; height: 280px; border-radius: 50%; border: 5px solid white;
-            position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1);
-        }
-
-        .segment {
-            position: absolute; width: 50%; height: 50%; transform-origin: bottom right;
-            display: flex; align-items: center; justify-content: center; color: black; font-size: 10px; font-weight: bold; text-align: center;
-        }
+        #settings-trigger { position: fixed; top: 15px; right: 15px; font-size: 30px; cursor: pointer; z-index: 20; }
     </style>
 </head>
 <body>
 
-    <div id="captcha-box">
-        <div class="g-recaptcha" data-sitekey="6Lemvn0sAAAAAHvuSbL8cWEj7Ek8m4yXNcVgv_ZD" data-callback="verify" data-expired-callback="expire"></div>
+    <div id="settings-trigger" onclick="toggleModal('settings-modal')">⚙️</div>
+
+    <div id="header">GOLD: <span id="gold-display">100</span> 🪙</div>
+
+    <div id="track-container"><div style="opacity: 0.3;">RACING TRACK</div></div>
+
+    <div id="wheel-area">
+        <div id="pointer"></div>
+        <div id="wheel"></div>
+        <button id="spin-btn" onclick="spinWheel()" style="margin-top:10px; cursor:pointer;">SPIN (FREE: 3)</button>
+        <small id="spin-timer" style="margin-top:5px; color: var(--gold);"></small>
     </div>
 
-    <div id="money-display">$100</div>
-    <div id="status" style="margin-bottom:10px; color: var(--yellow);">Verify to begin!</div>
-
-    <div class="grid locked" id="board">
-        </div>
-
-    <div class="controls">
-        <button class="btn btn-buy" onclick="buyCar()">BUY CAR ($<span id="price">10</span>)</button>
-        <div style="display:flex; gap:10px;">
-            <button class="btn btn-secondary" style="background:var(--yellow); color:black;" onclick="openWheel()">WHEEL</button>
-            <button class="btn btn-secondary" style="background:var(--green); color:black;" id="turbo-btn">TURBO (1X)</button>
-        </div>
+    <div id="grid">
+        <div class="slot" id="s0"></div><div class="slot" id="s1"></div><div class="slot" id="s2"></div><div class="slot" id="s3"></div>
+        <div class="slot" id="s4"></div><div class="slot" id="s5"></div><div class="slot" id="s6"></div><div class="slot" id="s7"></div>
+        <div class="slot" id="s8"></div><div class="slot" id="s9"></div><div class="slot" id="s10"></div><div class="slot" id="s11"></div>
     </div>
 
-    <div id="wheel-overlay">
-        <div class="wheel" id="wheel-disc">
-            <div class="segment" style="background:var(--yellow); transform:rotate(0deg);"><span>3X TURBO</span></div>
-            <div class="segment" style="background:var(--blue); transform:rotate(90deg);"><span>500 COINS</span></div>
-            <div class="segment" style="background:var(--red); transform:rotate(180deg);"><span>4 CARS</span></div>
-            <div class="segment" style="background:var(--green); transform:rotate(270deg);"><span>1 HR CASH</span></div>
+    <div id="shop-area">
+        <button id="buy-btn" onclick="buyCar()">BUY LEVEL 1<br><small id="price-display">50 🪙</small></button>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h2>SETTINGS</h2>
+            <button style="background:#e74c3c; color:white; border:none; padding:10px; width:100%;" onclick="resetGame()">RESET PROGRESS</button>
+            <br><br><button onclick="toggleModal('settings-modal')">CLOSE</button>
         </div>
-        <button class="btn btn-buy" style="margin-top:20px; width:200px;" onclick="spin()">SPIN ($50)</button>
-        <button class="btn" style="background:none; color:white;" onclick="closeWheel()">CLOSE</button>
     </div>
 
     <script>
-        let money = 100;
-        let carCount = 0;
-        let turbo = 1;
-        let isHuman = false;
-        let grid = Array(9).fill(0);
+        // --- GAME STATE ---
+        let state = {
+            gold: parseInt(localStorage.getItem('gold')) || 100,
+            purchaseCount: parseInt(localStorage.getItem('purchaseCount')) || 0,
+            maxLevel: parseInt(localStorage.getItem('maxLevel')) || 1,
+            freeSpins: parseInt(localStorage.getItem('freeSpins')) || 3,
+            lastSpinTime: parseInt(localStorage.getItem('lastSpinTime')) || 0,
+            inventory: JSON.parse(localStorage.getItem('inventory')) || new Array(12).fill(null)
+        };
 
-        // Init Grid
-        const board = document.getElementById('board');
-        for(let i=0; i<9; i++) {
-            let c = document.createElement('div');
-            c.className = 'cell';
-            c.id = `cell-${i}`;
-            c.onclick = () => merge(i);
-            board.appendChild(c);
+        const CONFIG = { basePrice: 50, inflation: 1.2, tierMult: 1.8, spinCost: 125 };
+
+        // --- CORE LOGIC ---
+        function getShopLevel() { return Math.max(1, state.maxLevel - 2); }
+
+        function getPrice() {
+            let tierJump = Math.pow(CONFIG.tierMult, getShopLevel() - 1);
+            let inflation = Math.pow(CONFIG.inflation, state.purchaseCount);
+            return Math.floor(CONFIG.basePrice * tierJump * inflation);
         }
-
-        function verify() { isHuman = true; board.classList.remove('locked'); document.getElementById('status').innerText = "System Active"; }
-        function expire() { isHuman = false; board.classList.add('locked'); document.getElementById('status').innerText = "Verification Required"; }
-
-        function getPrice() { return Math.floor(10 * Math.pow(1.2, carCount)); }
 
         function buyCar() {
-            if(!isHuman) return;
-            let p = getPrice();
-            if(money >= p) {
-                let slot = grid.indexOf(0);
-                if(slot !== -1) {
-                    money -= p; carCount++; grid[slot] = 1; update();
-                }
+            let price = getPrice();
+            if (state.gold >= price) {
+                let slotIdx = state.inventory.findIndex(s => s === null);
+                if (slotIdx === -1) return alert("Grid Full!");
+                
+                state.gold -= price;
+                state.purchaseCount++;
+                state.inventory[slotIdx] = { level: getShopLevel() };
+                updateUI();
+                save();
             }
         }
 
-        function merge(i) {
-            // Simplified merge: click cell to merge with any identical neighbor
-            if(grid[i] === 0) return;
-            for(let n of [i+1, i-1, i+3, i-3]) {
-                if(n >= 0 && n < 9 && grid[n] === grid[i]) {
-                    grid[n]++; grid[i] = 0; update(); break;
-                }
-            }
+        function spinWheel() {
+            const wheel = document.getElementById('wheel');
+            let cost = state.freeSpins > 0 ? 0 : CONFIG.spinCost;
+            
+            if (state.gold < cost && cost > 0) return alert("Not enough gold!");
+            
+            state.gold -= cost;
+            if (state.freeSpins > 0) state.freeSpins--;
+            if (state.freeSpins === 0 && state.lastSpinTime === 0) state.lastSpinTime = Date.now();
+
+            let randomDeg = Math.floor(Math.random() * 360) + 1440; // 4 full spins + random
+            wheel.style.transform = `rotate(${randomDeg}deg)`;
+            
+            save();
+            updateUI();
         }
 
-        function update() {
-            document.getElementById('money-display').innerText = `$${Math.floor(money)}`;
-            document.getElementById('price').innerText = getPrice();
-            grid.forEach((lvl, i) => {
-                const cell = document.getElementById(`cell-${i}`);
-                cell.innerHTML = lvl > 0 ? `<div class="car-sprite lvl-${lvl}"></div>` : "";
+        // --- UTILS ---
+        function toggleModal(id) {
+            let m = document.getElementById(id);
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function save() {
+            localStorage.setItem('gold', state.gold);
+            localStorage.setItem('purchaseCount', state.purchaseCount);
+            localStorage.setItem('maxLevel', state.maxLevel);
+            localStorage.setItem('freeSpins', state.freeSpins);
+            localStorage.setItem('lastSpinTime', state.lastSpinTime);
+            localStorage.setItem('inventory', JSON.stringify(state.inventory));
+        }
+
+        function updateUI() {
+            document.getElementById('gold-display').innerText = Math.floor(state.gold);
+            document.getElementById('price-display').innerText = getPrice() + " 🪙";
+            document.getElementById('buy-btn').innerHTML = `BUY LEVEL ${getShopLevel()}<br><small>${getPrice()} 🪙</small>`;
+            
+            let spinBtn = document.getElementById('spin-btn');
+            spinBtn.innerText = state.freeSpins > 0 ? `SPIN (FREE: ${state.freeSpins})` : `SPIN (${CONFIG.spinCost} 🪙)`;
+            
+            state.inventory.forEach((item, i) => {
+                document.getElementById(`s${i}`).innerText = item ? `🚗 L${item.level}` : "";
             });
         }
 
-        // Economy Loop
-        setInterval(() => {
-            if(!isHuman) return;
-            let income = 0;
-            grid.forEach(lvl => { if(lvl > 0) income += Math.pow(1.5, lvl-1); });
-            money += (income * turbo);
-            update();
-        }, 1000);
+        function resetGame() { localStorage.clear(); location.reload(); }
 
-        // Wheel functions
-        function openWheel() { document.getElementById('wheel-overlay').style.display = 'flex'; }
-        function closeWheel() { document.getElementById('wheel-overlay').style.display = 'none'; }
-        function spin() {
-            if(money < 50) return;
-            money -= 50;
-            let deg = Math.floor(Math.random() * 360) + 1800;
-            document.getElementById('wheel-disc').style.transform = `rotate(${deg}deg)`;
-            setTimeout(() => {
-                let res = deg % 360;
-                if(res < 90) turbo = 3;
-                else if(res < 180) money += 500;
-                else if(res < 270) { /* logic for 4 cars */ }
-                else { /* logic for 1 hr income */ }
-                update();
-                grecaptcha.reset(); expire(); // Force re-verify
-            }, 4000);
-        }
+        // Initial Load
+        updateUI();
+        
+        // Timer Check (Every second)
+        setInterval(() => {
+            if (state.freeSpins < 3 && state.lastSpinTime > 0) {
+                let elapsed = Date.now() - state.lastSpinTime;
+                if (elapsed >= 300000) { // 5 minutes
+                    state.freeSpins = 3;
+                    state.lastSpinTime = 0;
+                    updateUI();
+                    save();
+                }
+            }
+        }, 1000);
     </script>
 </body>
 </html>
