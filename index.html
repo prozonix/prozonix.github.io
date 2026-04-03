@@ -2,661 +2,570 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro F1 Grand Prix - Championship Edition</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix Car Designer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #87ceeb; 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --brand-blue: #3b82f6;
+            --brand-purple: #a855f7;
+            --panel-bg: #0f172a;
+            --card-bg: #1e293b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
             user-select: none;
-            touch-action: none;
         }
-        #ui-layer {
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .part-card {
+            background: var(--card-bg);
+            border: 1px solid #334155;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .part-card::before {
+            content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-            color: #fff;
-            display: none; 
-            z-index: 50;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: #334155;
         }
-        .retro-panel {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 12px;
-            border-radius: 12px;
-            pointer-events: auto;
-            color: #1e1b4b;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+
+        .part-card.has-stock {
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
-        #speed-hud {
-            position: absolute;
-            bottom: 140px;
-            right: 30px;
-            width: 180px;
-            text-align: right;
+
+        .blueprint-zone {
+            background-color: #0f172a;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 1px solid #1e293b;
         }
-        #speedometer { font-size: 2.2rem; font-weight: 900; color: #059669; font-family: monospace; line-height: 1; }
-        
-        #start-screen, #pause-screen, #countdown-overlay, #finish-screen, #shop-screen {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+
+        .progress-bar {
+            height: 4px;
+            background: #020617;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--brand-blue);
+            width: 0%;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 4px;
+            background: #0ea5e9;
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease;
             z-index: 100;
-            text-align: center;
+            border-left: 4px solid white;
         }
-        #start-screen { background: linear-gradient(180deg, #87ceeb 0%, #e0f2fe 100%); }
-        #pause-screen { background: rgba(135, 206, 235, 0.85); backdrop-filter: blur(8px); display: none; z-index: 200; }
-        #finish-screen { background: rgba(30, 27, 75, 0.98); display: none; z-index: 300; color: white; padding: 20px; }
-        #shop-screen { background: #1e1b4b; display: none; z-index: 400; color: white; }
-        #countdown-overlay { pointer-events: none; background: rgba(0,0,0,0.1); display: none; z-index: 150; }
-        #countdown-text { font-size: 12rem; font-weight: 900; color: #facc15; text-shadow: 0 0 30px rgba(0,0,0,0.3); font-style: italic; }
 
-        .btn {
-            background: #facc15; color: #1e1b4b; padding: 16px 48px; font-size: 1.1rem; font-weight: 800;
-            border-radius: 12px; cursor: pointer; margin: 8px; width: 280px; transition: all 0.2s;
-            border: 2px solid #000; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(250, 204, 21, 0.3);
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
-        .btn-blue { background: #2563eb; color: white; border: none; }
-        .btn-gray { background: #4b5563; color: white; border: none; }
-        .btn-green { background: #10b981; color: white; border: none; }
-        .btn:hover:not(:disabled) { transform: translateY(-3px); filter: brightness(1.1); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+        .technical-spec {
+            font-size: 10px;
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn-engineer {
+            background: #334155;
+            transition: all 0.2s;
+            border-bottom: 3px solid #1e293b;
+        }
         
-        #mobile-controls { position: absolute; bottom: 30px; width: 100%; display: none; justify-content: space-between; padding: 0 30px; pointer-events: none; z-index: 60; }
-        .touch-btn { width: 80px; height: 80px; background: rgba(255,255,255,0.3); backdrop-filter: blur(5px); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #1e1b4b; pointer-events: auto; font-weight: bold; border: 2px solid rgba(255,255,255,0.5); }
-        .gas-btn { background: rgba(16, 185, 129, 0.4); border-color: #10b981; width: 100px; height: 100px; }
+        .btn-engineer:hover { background: #475569; }
+        .btn-engineer:active { transform: translateY(2px); border-bottom-width: 1px; }
 
-        .pause-trigger {
-            width: 44px;
-            height: 44px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            pointer-events: auto;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255,255,255,0.5);
+        input[type="range"] {
+            accent-color: var(--brand-purple);
         }
 
-        .stat-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; width: 120px; }
-        .stat-fill { height: 100%; background: #facc15; transition: width 0.3s; }
+        .config-toggle {
+            background: #0f172a;
+            border: 1px solid #334155;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 4px 8px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
 
-        @media (max-width: 1024px) { #mobile-controls { display: flex; } }
+        .config-toggle.active {
+            background: var(--brand-purple);
+            color: white;
+            border-color: var(--brand-purple);
+        }
+
+        #btn-forge {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #btn-forge.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            transform: scale(1.02);
+            cursor: pointer;
+        }
+
+        #btn-forge:disabled {
+            background: #1e293b;
+            color: #475569;
+            cursor: not-allowed;
+            border: 1px solid #334155;
+        }
+
+        #svg-body {
+            transition: d 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s;
+        }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <h1 class="text-7xl font-black text-indigo-900 mb-2 italic tracking-tighter text-center">RETRO F1</h1>
-        <p class="text-indigo-600 font-bold mb-12 uppercase tracking-widest text-sm text-center">Championship Season</p>
-        <div class="mb-4 text-indigo-800 font-bold" id="total-points-display">Total Points: 0</div>
-        <button class="btn" onclick="startGame('solo')">SOLO TIME TRIAL</button>
-        <button class="btn btn-blue" onclick="startGame('championship')">CHAMPIONSHIP MODE</button>
-        <button class="btn btn-green" onclick="showShop()">UPGRADE SHOP</button>
-    </div>
-
-    <div id="shop-screen">
-        <h2 class="text-5xl font-black text-yellow-400 mb-2 italic uppercase">Team HQ</h2>
-        <p class="text-blue-300 font-bold mb-8 uppercase tracking-widest text-sm">Upgrade your machine</p>
-        
-        <div class="bg-white/10 p-8 rounded-3xl w-full max-w-md space-y-6 mb-8">
-            <div class="flex justify-between items-center">
-                <span class="font-bold">Available Points:</span>
-                <span id="shop-points" class="text-2xl text-yellow-400 font-black">0</span>
+    <header class="border-b border-slate-800 bg-slate-950 p-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <div>
+                    <h1 class="text-xl font-black tracking-tighter text-white uppercase italic">Project <span class="text-blue-500">Phoenix</span></h1>
+                    <p class="text-[9px] text-slate-500 font-bold tracking-[0.3em] uppercase">Vehicle Assembly System</p>
+                </div>
             </div>
-            
-            <div class="space-y-4">
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-bold uppercase">Top Speed</span>
-                        <span id="speed-lvl" class="text-xs text-blue-300">Level 1</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="stat-bar flex-grow"><div id="bar-speed" class="stat-fill" style="width: 20%"></div></div>
-                        <button id="buy-speed" class="px-4 py-1 bg-yellow-400 text-indigo-900 rounded-lg text-xs font-black uppercase" onclick="buyUpgrade('speed')">Buy (10)</button>
-                    </div>
+            <div class="flex gap-10">
+                <div class="text-right">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase">Funds</p>
+                    <p id="balance" class="text-xl mono text-emerald-400 font-bold">$0</p>
                 </div>
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-bold uppercase">Acceleration</span>
-                        <span id="accel-lvl" class="text-xs text-blue-300">Level 1</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="stat-bar flex-grow"><div id="bar-accel" class="stat-fill" style="width: 20%"></div></div>
-                        <button id="buy-accel" class="px-4 py-1 bg-yellow-400 text-indigo-900 rounded-lg text-xs font-black uppercase" onclick="buyUpgrade('accel')">Buy (10)</button>
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-bold uppercase">Steering</span>
-                        <span id="steer-lvl" class="text-xs text-blue-300">Level 1</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="stat-bar flex-grow"><div id="bar-steer" class="stat-fill" style="width: 20%"></div></div>
-                        <button id="buy-steer" class="px-4 py-1 bg-yellow-400 text-indigo-900 rounded-lg text-xs font-black uppercase" onclick="buyUpgrade('steer')">Buy (10)</button>
-                    </div>
+                <div class="text-right border-l border-slate-800 pl-10">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase">Exported</p>
+                    <p id="cars-sold" class="text-xl mono text-blue-400 font-bold">0</p>
                 </div>
             </div>
         </div>
+    </header>
 
-        <button class="btn" onclick="exitToMenu()">BACK TO PADDOCK</button>
-    </div>
-
-    <div id="pause-screen">
-        <h2 class="text-5xl font-black text-indigo-900 mb-8 italic uppercase">Paused</h2>
-        <button class="btn" onclick="togglePause()">RESUME RACE</button>
-        <button class="btn btn-gray" onclick="exitToMenu()">QUIT TO MENU</button>
-    </div>
-
-    <div id="finish-screen">
-        <h2 class="text-5xl md:text-6xl font-black text-yellow-400 mb-2 italic uppercase">Race Finished!</h2>
-        <div id="points-earned-msg" class="text-lg md:text-xl font-bold text-green-400 mb-6 uppercase tracking-wider"></div>
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-8">
         
-        <div class="mb-8 w-full max-w-sm bg-white/10 p-4 rounded-2xl font-mono text-left text-sm md:text-base border border-white/20">
-            <div id="final-results" class="space-y-1">
-                <!-- Results populated by JS -->
+        <!-- Left Column: Component Engineering -->
+        <div class="col-span-12 lg:col-span-4 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Engineering Hub</h2>
+            </div>
+
+            <!-- Chassis Card -->
+            <div id="card-chassis" class="part-card p-4 rounded-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-bold text-xs uppercase tracking-tight text-white">Full Body Chassis</h3>
+                        <p id="chassis-type-label" class="technical-spec mt-1">Design: Sedan</p>
+                    </div>
+                    <div id="stack-chassis" class="bg-blue-600 text-[10px] font-black px-2 py-1 rounded hidden">0 READY</div>
+                </div>
+                <div class="progress-bar mb-3"><div id="progress-chassis" class="progress-fill"></div></div>
+                <button onclick="game.produce('chassis')" class="btn-engineer w-full py-2 text-[10px] font-bold uppercase tracking-widest text-slate-200">Stamp Chassis</button>
+            </div>
+
+            <!-- Engine Configuration -->
+            <div id="card-engine" class="part-card p-4 rounded-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 id="engine-display-name" class="font-bold text-xs uppercase tracking-tight text-white">3.0L V6</h3>
+                        <p class="technical-spec mt-1">Configurator</p>
+                    </div>
+                    <div id="stack-engine" class="bg-purple-600 text-[10px] font-black px-2 py-1 rounded hidden">0 READY</div>
+                </div>
+
+                <div class="bg-slate-900/50 p-3 border border-slate-800 mb-4 space-y-3">
+                    <div class="flex gap-1">
+                        <button onclick="game.updateEngine('layout', 'Inline')" id="btn-layout-inline" class="config-toggle active flex-1">INLINE</button>
+                        <button onclick="game.updateEngine('layout', 'V')" id="btn-layout-v" class="config-toggle flex-1">V-TYPE</button>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[8px] uppercase font-bold text-slate-500 mb-1">
+                            <span>Cylinders</span>
+                            <span id="val-cylinders" class="text-purple-400">6</span>
+                        </div>
+                        <input type="range" min="3" max="12" step="1" value="6" oninput="game.updateEngine('cylinders', this.value)" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[8px] uppercase font-bold text-slate-500 mb-1">
+                            <span>Displacement</span>
+                            <span id="val-liters" class="text-purple-400">3.0L</span>
+                        </div>
+                        <input type="range" min="1.0" max="8.0" step="0.1" value="3.0" oninput="game.updateEngine('displacement', this.value)" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <div class="bg-slate-900/50 p-2 border border-slate-800 text-center">
+                        <p class="text-[8px] text-slate-500 uppercase font-bold">Power</p>
+                        <p id="stat-power" class="text-[10px] mono text-purple-300">345 HP</p>
+                    </div>
+                    <div class="bg-slate-900/50 p-2 border border-slate-800 text-center">
+                        <p class="text-[8px] text-slate-500 uppercase font-bold">Prod. Time</p>
+                        <p id="stat-complexity" class="text-[10px] mono text-purple-300">4.2s</p>
+                    </div>
+                </div>
+                
+                <div class="progress-bar mb-3"><div id="progress-engine" class="progress-fill" style="background: #a855f7;"></div></div>
+                <button onclick="game.produce('engine')" class="btn-engineer w-full py-2 text-[10px] font-bold uppercase tracking-widest text-slate-200">Forge Engine Block</button>
+            </div>
+
+            <!-- Tires Card -->
+            <div id="card-tires" class="part-card p-4 rounded-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-bold text-xs uppercase tracking-tight text-white">Performance Tires</h3>
+                        <p class="technical-spec mt-1">Full Set (4 Units)</p>
+                    </div>
+                    <div id="stack-tires" class="bg-slate-500 text-[10px] font-black px-2 py-1 rounded hidden">0 READY</div>
+                </div>
+                <div class="progress-bar mb-3"><div id="progress-tires" class="progress-fill" style="background: #94a3b8;"></div></div>
+                <button onclick="game.produce('tires')" class="btn-engineer w-full py-2 text-[10px] font-bold uppercase tracking-widest text-slate-200">Mold Wheel Set</button>
             </div>
         </div>
 
-        <button class="btn btn-blue" onclick="exitToMenu()">RETURN TO PADDOCK</button>
-    </div>
+        <!-- Center Column: Assembly Blueprint -->
+        <div class="col-span-12 lg:col-span-5 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Vehicle Assembly</h2>
+                <div class="flex gap-2">
+                    <div id="status-chassis" class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">CHASSIS</div>
+                    <div id="status-engine" class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">ENGINE</div>
+                    <div id="status-tires" class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500">TIRES</div>
+                </div>
+            </div>
 
-    <div id="countdown-overlay"><div id="countdown-text">3</div></div>
+            <div id="blueprint" class="blueprint-zone rounded-lg min-h-[500px] flex flex-col items-center justify-center p-10 relative">
+                <div class="absolute top-4 left-4 border-l border-t border-slate-700 w-12 h-12"></div>
+                <div class="absolute bottom-4 right-4 border-r border-b border-slate-700 w-12 h-12"></div>
 
-    <div id="ui-layer">
-        <div class="flex justify-between items-start">
-            <div>
-                <div class="pause-trigger" onclick="togglePause()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16" rx="1"/>
-                        <rect x="14" y="4" width="4" height="16" rx="1"/>
+                <div id="assembly-visual" class="relative w-full max-w-sm aspect-video flex items-center justify-center">
+                    <svg id="car-svg" class="w-full h-full text-slate-800 overflow-visible" viewBox="0 0 100 60" fill="none" stroke="currentColor" stroke-width="0.5">
+                        <!-- Morphing Chassis -->
+                        <path id="svg-body" d="M10,45 L90,45 L90,35 C90,35 85,30 75,30 L65,20 L35,20 L25,30 L10,30 Z" stroke-dasharray="300" stroke-dashoffset="300"></path>
+                        
+                        <!-- Engine (Front) -->
+                        <rect id="svg-engine-block" x="18" y="32" width="12" height="8" rx="1" stroke-width="1" opacity="0"></rect>
+                        
+                        <!-- Tires -->
+                        <circle id="svg-tire1" cx="25" cy="45" r="5" opacity="0.05"></circle>
+                        <circle id="svg-tire2" cx="75" cy="45" r="5" opacity="0.05"></circle>
+                        
+                        <!-- Labels (Internal Blueprint) -->
+                        <text x="18" y="28" fill="currentColor" font-size="2" font-family="monospace" id="label-engine" opacity="0">FRONT_ENG_MOUNT</text>
+                        <text x="45" y="18" fill="currentColor" font-size="2" font-family="monospace" id="label-chassis" opacity="0">STRUCTURE_VALID</text>
                     </svg>
                 </div>
-                <div class="retro-panel">
-                    <div class="text-[10px] text-indigo-700 uppercase font-black mb-1">Time</div>
-                    <div id="lap-timer" class="text-xl font-mono font-bold">00:00:00</div>
-                </div>
-            </div>
-            <div class="retro-panel text-right">
-                <div id="pos-container">
-                    <div id="position-text" class="text-2xl font-black text-blue-600 italic">P1 / 8</div>
-                </div>
-                <div id="lap-count" class="text-lg font-bold">LAP 1/1</div>
-            </div>
-        </div>
-        <div id="speed-hud" class="retro-panel">
-            <div id="gear-display" class="text-orange-600 font-black text-sm italic">GEAR 1</div>
-            <div id="speedometer">000</div>
-            <div class="w-full h-1.5 bg-white/50 mt-2 rounded-full overflow-hidden">
-                <div id="rev-meter" class="h-full bg-green-500 w-0"></div>
-            </div>
-        </div>
-    </div>
 
-    <div id="mobile-controls">
-        <div class="flex gap-4">
-            <div class="touch-btn" id="btn-left">◀</div>
-            <div class="touch-btn" id="btn-right">▶</div>
+                <div class="mt-8 w-full flex flex-col items-center gap-4">
+                    <button id="btn-forge" disabled onclick="game.forgeCar()" class="w-full py-4 text-sm font-black uppercase tracking-[0.3em] text-white rounded-sm">
+                        Forge Vehicle
+                    </button>
+                    <p id="forge-info" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Awaiting full component set</p>
+                </div>
+            </div>
         </div>
-        <div class="touch-btn gas-btn" id="btn-up">GAS</div>
-    </div>
+
+        <!-- Right Column: Market Analysis -->
+        <div class="col-span-12 lg:col-span-3 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h2 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Market Intelligence</h2>
+            </div>
+
+            <div class="bg-slate-900/80 p-4 rounded-sm border border-slate-800">
+                <h4 class="text-[10px] font-bold uppercase text-blue-400 mb-3">Model Categorization</h4>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-[9px] mb-1 uppercase">
+                            <span class="text-slate-400">Sport Performance</span>
+                            <span id="stat-performance-match" class="text-slate-200">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                            <div id="bar-performance-match" class="bg-blue-500 h-1 w-[0%] transition-all duration-500"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] mb-1 uppercase">
+                            <span class="text-slate-400">Practicality</span>
+                            <span id="stat-practicality-match" class="text-slate-200">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                            <div id="bar-practicality-match" class="bg-emerald-500 h-1 w-[0%] transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/40 p-4 rounded-sm border border-slate-800">
+                <h4 class="text-[10px] font-bold uppercase text-slate-400 mb-3">Market Value</h4>
+                <div class="flex items-baseline gap-2">
+                    <span id="display-price" class="text-2xl font-black text-emerald-400">$0</span>
+                </div>
+                <p id="market-comment" class="text-[9px] text-slate-500 mt-2 leading-relaxed italic">Tune engine specs to project values.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="notif-container"></div>
 
     <script>
-        let scene, camera, renderer, car, carContainer;
-        let segments = [];
-        let opponents = [];
-        const segmentLength = 60; 
-        const trackWidth = 100;
-        const totalSegments = 1200; 
-        const visibleRange = 80;
+        const game = {
+            balance: 0,
+            carsSold: 0,
+            engineConfig: { layout: 'Inline', cylinders: 6, displacement: 3.0, rpm: 7000 },
+            parts: {
+                chassis: { count: 0, speed: 0.8, isProducing: false },
+                engine: { count: 0, speed: 0.5, isProducing: false },
+                tires: { count: 0, speed: 1.2, isProducing: false }
+            },
+            carPrice: 0,
+            isForging: false,
+            currentType: 'Sedan',
 
-        let speed = 0;
-        let carX = 0;
-        let turning = 0;
-        let totalDistance = 0;
-        let gameRunning = false;
-        let isPaused = false;
-        let isCountingDown = false;
-        let isFinished = false;
-        let startTime = 0;
-        let totalPauseDuration = 0;
-        let pauseStartTime = 0;
-        let gameMode = 'solo';
+            // Comprehensive Paths for all requested vehicle types
+            paths: {
+                "Hatchback": "M10,45 L90,45 L90,25 C90,25 80,22 75,22 L35,22 L25,32 L10,32 Z",
+                "Sedan": "M10,45 L90,45 L90,35 C90,35 85,30 75,30 L65,20 L35,20 L25,30 L10,30 Z",
+                "Crossover": "M10,45 L90,45 L90,25 C90,25 85,18 75,18 L40,18 L25,28 L10,28 Z",
+                "SUV": "M10,45 L90,45 L90,15 L45,15 L25,25 L10,25 Z",
+                "Coupe": "M10,45 L90,45 L90,35 C90,35 88,32 80,32 L55,20 L30,20 L15,32 L10,32 Z",
+                "Supercar": "M10,45 L90,45 L90,40 C90,40 85,28 70,28 L40,25 L20,25 L12,38 L10,38 Z",
+                "Track Car": "M5,45 L95,45 L95,42 C95,42 90,25 70,25 L35,25 L15,35 L5,35 Z M85,25 L92,25 L92,15 L85,15 Z" // Added a wing
+            },
 
-        // Career / Upgrade State
-        let playerPoints = 0;
-        let upgrades = {
-            speed: 1,
-            accel: 1,
-            steer: 1
-        };
-        const MAX_LVL = 5;
-        const UPGRADE_COST = 10;
-        const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4];
+            init() {
+                this.calculateEngineStats();
+                this.updateUI();
+            },
 
-        const keys = { left: false, right: false, up: false };
-        const opponentColors = [0x2563eb, 0xef4444, 0x10b981, 0xf97316, 0x8b5cf6, 0xec4899, 0x06b6d4];
-
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb); 
-            scene.fog = new THREE.Fog(0x87ceeb, 1000, 4000);
-
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 6000);
-            
-            renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.body.appendChild(renderer.domElement);
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-            sun.position.set(500, 1000, 500);
-            scene.add(sun);
-            
-            createTrack();
-            
-            carContainer = new THREE.Group();
-            scene.add(carContainer);
-            car = createCar(0xfacc15); 
-            carContainer.add(car);
-            
-            camera.position.set(0, 12, 35);
-            camera.lookAt(0, 5, -50);
-            carContainer.add(camera);
-
-            setupControls();
-            window.addEventListener('resize', onWindowResize);
-            loop();
-        }
-
-        function createTrack() {
-            let x = 0, dx = 0;
-            const roadMat1 = new THREE.MeshPhongMaterial({ color: 0x333333, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-            const roadMat2 = new THREE.MeshPhongMaterial({ color: 0x3a3a3a, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-            const grassMat1 = new THREE.MeshPhongMaterial({ color: 0x2d5a27 });
-            const grassMat2 = new THREE.MeshPhongMaterial({ color: 0x34652e });
-
-            for(let i = 0; i < totalSegments; i++) {
-                if (i > 100) {
-                    dx += Math.sin(i * 0.015) * 0.25;
-                    dx = Math.max(-10, Math.min(10, dx));
-                }
-                x += dx;
-
-                const isAlt = Math.floor(i / 6) % 2 === 0;
-                const group = new THREE.Group();
-                group.position.set(x, 0, -i * segmentLength);
-                
-                const angleY = -Math.atan2(dx, segmentLength);
-                group.rotation.set(0, angleY, 0);
-
-                const road = new THREE.Mesh(new THREE.PlaneBufferGeometry(trackWidth, segmentLength + 0.5), isAlt ? roadMat1 : roadMat2);
-                road.rotation.x = -Math.PI / 2;
-                road.renderOrder = 2;
-                group.add(road);
-
-                const grass = new THREE.Mesh(new THREE.PlaneBufferGeometry(10000, segmentLength + 0.5), isAlt ? grassMat1 : grassMat2);
-                grass.rotation.x = -Math.PI / 2;
-                grass.position.y = -0.1; 
-                grass.renderOrder = 1;
-                group.add(grass);
-
-                if (i % 30 === 0) {
-                    const pole = new THREE.Mesh(new THREE.BoxBufferGeometry(2, 70, 2), new THREE.MeshPhongMaterial({color: 0xcccccc}));
-                    pole.position.set(trackWidth/2 + 40, 35, 0);
-                    group.add(pole);
-                }
-                
-                if (i === totalSegments - 20) {
-                    const line = new THREE.Mesh(new THREE.PlaneBufferGeometry(trackWidth, 10), new THREE.MeshPhongMaterial({color: 0xffffff}));
-                    line.rotation.x = -Math.PI / 2;
-                    line.position.y = 0.1;
-                    group.add(line);
-                }
-
-                const curbMat = new THREE.MeshPhongMaterial({ color: isAlt ? 0xef4444 : 0xffffff });
-                const curbL = new THREE.Mesh(new THREE.PlaneBufferGeometry(12, segmentLength + 0.5), curbMat);
-                curbL.rotation.x = -Math.PI / 2;
-                curbL.position.set(-trackWidth/2 - 6, 0.05, 0);
-                curbL.renderOrder = 3;
-                group.add(curbL);
-                
-                const curbR = new THREE.Mesh(new THREE.PlaneBufferGeometry(12, segmentLength + 0.5), curbMat);
-                curbR.rotation.x = -Math.PI / 2;
-                curbR.position.set(trackWidth/2 + 6, 0.05, 0);
-                curbR.renderOrder = 3;
-                group.add(curbR);
-
-                scene.add(group);
-                segments.push({ x, dx, angleY, mesh: group });
-            }
-        }
-
-        function createCar(color) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshPhongMaterial({color: color});
-            const black = new THREE.MeshPhongMaterial({color: 0x111111});
-            
-            const body = new THREE.Mesh(new THREE.BoxBufferGeometry(5, 1.5, 10), mat);
-            body.position.y = 1;
-            group.add(body);
-
-            const fWing = new THREE.Mesh(new THREE.BoxBufferGeometry(12, 0.3, 3), black);
-            fWing.position.set(0, 0.5, -6);
-            group.add(fWing);
-
-            const rWing = new THREE.Mesh(new THREE.BoxBufferGeometry(10, 0.5, 4), black);
-            rWing.position.set(0, 3, 6);
-            group.add(rWing);
-
-            const wheels = [[-4, 0.5, -4], [4, 0.5, -4], [-4.5, 0.5, 4], [4.5, 0.5, 4]];
-            wheels.forEach(p => {
-                const w = new THREE.Mesh(new THREE.CylinderBufferGeometry(1.8, 1.8, 2.5, 16), black);
-                w.rotation.z = Math.PI / 2;
-                w.position.set(p[0], p[1], p[2]);
-                group.add(w);
-            });
-            return group;
-        }
-
-        function setupControls() {
-            const setKey = (c, v) => {
-                if(c === 'ArrowLeft' || c === 'KeyA') keys.left = v;
-                if(c === 'ArrowRight' || c === 'KeyD') keys.right = v;
-                if(c === 'ArrowUp' || c === 'KeyW') keys.up = v;
-            };
-            window.addEventListener('keydown', e => setKey(e.code, true));
-            window.addEventListener('keyup', e => setKey(e.code, false));
-
-            const bind = (id, k) => {
-                const el = document.getElementById(id);
-                el.onpointerdown = (e) => { e.preventDefault(); keys[k] = true; };
-                el.onpointerup = el.onpointerleave = (e) => { e.preventDefault(); keys[k] = false; };
-            };
-            bind('btn-left', 'left'); bind('btn-right', 'right'); bind('btn-up', 'up');
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function resetGameState() {
-            speed = 0;
-            carX = 0;
-            turning = 0;
-            totalDistance = 0;
-            totalPauseDuration = 0;
-            pauseStartTime = 0;
-            gameRunning = false;
-            isPaused = false;
-            isCountingDown = false;
-            isFinished = false;
-
-            document.getElementById('start-screen').style.display = 'flex';
-            document.getElementById('shop-screen').style.display = 'none';
-            document.getElementById('pause-screen').style.display = 'none';
-            document.getElementById('finish-screen').style.display = 'none';
-            document.getElementById('ui-layer').style.display = 'none';
-            document.getElementById('countdown-overlay').style.display = 'none';
-            document.getElementById('lap-timer').innerText = '0:00';
-            document.getElementById('speedometer').innerText = '000';
-            document.getElementById('rev-meter').style.width = '0%';
-            document.getElementById('total-points-display').innerText = `Total Points: ${playerPoints}`;
-
-            opponents.forEach(o => scene.remove(o.mesh));
-            opponents = [];
-        }
-
-        function showShop() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('shop-screen').style.display = 'flex';
-            updateShopUI();
-        }
-
-        function updateShopUI() {
-            document.getElementById('shop-points').innerText = playerPoints;
-            
-            const features = ['speed', 'accel', 'steer'];
-            features.forEach(f => {
-                const lvl = upgrades[f];
-                document.getElementById(`${f}-lvl`).innerText = lvl === MAX_LVL ? 'MAX LEVEL' : `Level ${lvl}`;
-                document.getElementById(`bar-${f}`).style.width = `${(lvl / MAX_LVL) * 100}%`;
-                
-                const btn = document.getElementById(`buy-${f}`);
-                if (lvl >= MAX_LVL) {
-                    btn.disabled = true;
-                    btn.innerText = "MAXED";
+            updateEngine(key, value) {
+                if (key === 'layout') {
+                    this.engineConfig.layout = value;
+                    document.getElementById('btn-layout-inline').classList.toggle('active', value === 'Inline');
+                    document.getElementById('btn-layout-v').classList.toggle('active', value === 'V');
                 } else {
-                    btn.disabled = playerPoints < UPGRADE_COST;
-                    btn.innerText = `Buy (${UPGRADE_COST})`;
+                    this.engineConfig[key] = parseFloat(value);
                 }
-            });
-        }
+                this.calculateEngineStats();
+                this.updateUI();
+            },
 
-        function buyUpgrade(feature) {
-            if (playerPoints >= UPGRADE_COST && upgrades[feature] < MAX_LVL) {
-                playerPoints -= UPGRADE_COST;
-                upgrades[feature]++;
-                updateShopUI();
-            }
-        }
+            calculateEngineStats() {
+                const cfg = this.engineConfig;
+                let power = (cfg.cylinders * 38) + (cfg.displacement * 45);
+                if (cfg.layout === 'V') power *= 1.2;
+                
+                const perfScore = Math.min(100, Math.round((power / 800) * 100));
+                const pracScore = Math.max(5, 100 - (cfg.cylinders * 6) - (cfg.displacement * 6));
 
-        function startGame(mode) {
-            resetGameState(); 
-            gameMode = mode;
-            gameRunning = true;
-            isCountingDown = true;
-            
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('ui-layer').style.display = 'flex';
-            
-            const countEl = document.getElementById('countdown-overlay');
-            const txt = document.getElementById('countdown-text');
-            countEl.style.display = 'flex';
-            
-            let c = 3;
-            txt.innerText = c;
-            const timer = setInterval(() => {
-                c--;
-                if(c > 0) txt.innerText = c;
-                else if(c === 0) txt.innerText = "GO!";
-                else {
-                    clearInterval(timer);
-                    countEl.style.display = 'none';
-                    isCountingDown = false;
-                    startTime = Date.now();
-                }
-            }, 1000);
+                // Detailed Logic for Body Styles
+                if (perfScore > 90) this.currentType = 'Track Car';
+                else if (perfScore > 75) this.currentType = 'Supercar';
+                else if (perfScore > 60 && pracScore < 40) this.currentType = 'Coupe';
+                else if (pracScore > 75) this.currentType = 'Hatchback';
+                else if (pracScore > 60) this.currentType = 'Sedan';
+                else if (cfg.displacement > 5.0) this.currentType = 'SUV';
+                else this.currentType = 'Crossover';
 
-            if(mode === 'championship') {
-                for(let i=0; i<7; i++) {
-                    const m = createCar(opponentColors[i]);
-                    scene.add(m);
-                    opponents.push({ 
-                        id: i + 1,
-                        name: `Driver #${i + 2}`,
-                        mesh: m, 
-                        dist: 150 + i*120, 
-                        x: (i % 2 === 0 ? -25 : 25), 
-                        targetSpeed: 3.4 + Math.random()*0.3,
-                        currentSpeed: 0,
-                        acceleration: 0.005 + Math.random() * 0.002
-                    });
-                }
-                document.getElementById('position-text').innerText = `P8 / 8`;
-            } else {
-                document.getElementById('position-text').innerText = `P1 / 1`;
-            }
-        }
+                document.getElementById('chassis-type-label').textContent = `Design: ${this.currentType}`;
+                document.getElementById('engine-display-name').textContent = `${cfg.displacement}L ${cfg.layout}${cfg.cylinders}`;
+                document.getElementById('val-cylinders').textContent = cfg.cylinders;
+                document.getElementById('val-liters').textContent = cfg.displacement + 'L';
+                document.getElementById('stat-power').textContent = Math.round(power) + ' HP';
+                
+                // Adjust pricing based on body style premium
+                let premium = 1;
+                if (this.currentType === 'Supercar') premium = 2.5;
+                if (this.currentType === 'Track Car') premium = 4.0;
+                if (this.currentType === 'SUV') premium = 1.3;
 
-        function finishRace() {
-            isFinished = true;
-            const resultsEl = document.getElementById('final-results');
-            const finishers = [
-                { name: 'YOU', dist: totalDistance, color: '#facc15' },
-                ...opponents.map(o => ({ name: o.name, dist: o.dist, color: '#' + o.mesh.children[0].material.color.getHexString() }))
-            ].sort((a, b) => b.dist - a.dist);
+                this.carPrice = Math.round((12000 + (power * 70) + (pracScore * 120)) * premium);
+                document.getElementById('display-price').textContent = `$${this.carPrice.toLocaleString()}`;
+                
+                document.getElementById('stat-performance-match').textContent = `${perfScore}%`;
+                document.getElementById('bar-performance-match').style.width = `${perfScore}%`;
+                document.getElementById('stat-practicality-match').textContent = `${pracScore}%`;
+                document.getElementById('bar-practicality-match').style.width = `${pracScore}%`;
 
-            const playerPos = finishers.findIndex(f => f.name === 'YOU');
-            let pointsEarned = 0;
-            
-            if (gameMode === 'championship') {
-                pointsEarned = POINTS_SYSTEM[playerPos] || 0;
-                playerPoints += pointsEarned;
-                document.getElementById('points-earned-msg').innerText = `POS: P${playerPos + 1} | +${pointsEarned} POINTS`;
-            } else {
-                document.getElementById('points-earned-msg').innerText = "TIME TRIAL COMPLETED";
-            }
+                // Morph Chassis Preview
+                const body = document.getElementById('svg-body');
+                body.setAttribute('d', this.paths[this.currentType]);
+            },
 
-            resultsEl.innerHTML = finishers.map((f, i) => `
-                <div class="flex justify-between items-center py-1 border-b border-white/10 ${f.name === 'YOU' ? 'text-yellow-400 font-bold' : ''}">
-                    <span>${i+1}. ${f.name}</span>
-                    <div class="w-3 h-3 rounded-full border border-white/20" style="background: ${f.color}"></div>
-                </div>
-            `).join('');
+            produce(partKey) {
+                const part = this.parts[partKey];
+                if (part.isProducing) return;
+                part.isProducing = true;
+                let startTime = null;
+                const duration = 1500 / part.speed;
 
-            document.getElementById('finish-screen').style.display = 'flex';
-            document.getElementById('ui-layer').style.display = 'none';
-        }
+                const animate = (time) => {
+                    if (!startTime) startTime = time;
+                    const elapsed = time - startTime;
+                    const percent = Math.min((elapsed / duration) * 100, 100);
+                    document.getElementById(`progress-${partKey}`).style.width = percent + '%';
+                    if (percent < 100) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        part.count++;
+                        part.isProducing = false;
+                        document.getElementById(`progress-${partKey}`).style.width = '0%';
+                        this.updateUI();
+                    }
+                };
+                requestAnimationFrame(animate);
+            },
 
-        function togglePause() {
-            if (!gameRunning || isCountingDown || isFinished) return;
-            isPaused = !isPaused;
-            document.getElementById('pause-screen').style.display = isPaused ? 'flex' : 'none';
-            if(isPaused) {
-                pauseStartTime = Date.now();
-            } else {
-                totalPauseDuration += (Date.now() - pauseStartTime);
-            }
-        }
+            forgeCar() {
+                if (this.isForging) return;
+                
+                this.parts.chassis.count--;
+                this.parts.engine.count--;
+                this.parts.tires.count--;
+                
+                this.isForging = true;
+                this.updateUI();
+                
+                const body = document.getElementById('svg-body');
+                const t1 = document.getElementById('svg-tire1');
+                const t2 = document.getElementById('svg-tire2');
+                const eng = document.getElementById('svg-engine-block');
+                const l1 = document.getElementById('label-chassis');
+                const l2 = document.getElementById('label-engine');
 
-        function exitToMenu() {
-            resetGameState();
-        }
+                // Sequence
+                body.style.strokeDashoffset = "0";
+                body.style.stroke = "#3b82f6";
+                body.style.strokeWidth = "1";
+                l1.setAttribute('opacity', '1');
 
-        function loop() {
-            requestAnimationFrame(loop);
-            
-            const trackLen = totalSegments * segmentLength;
-            const dist = totalDistance % trackLen;
-            const idx = Math.floor(dist / segmentLength);
-            const curr = segments[idx] || segments[0];
-            const next = segments[(idx + 1) % totalSegments] || segments[1];
-            const percent = (dist % segmentLength) / segmentLength;
+                setTimeout(() => {
+                    eng.setAttribute('opacity', '1');
+                    eng.setAttribute('stroke', '#a855f7');
+                    l2.setAttribute('opacity', '1');
+                }, 500);
 
-            const interpX = curr.x + (next.x - curr.x) * percent;
-            const interpRotY = curr.angleY + (next.angleY - curr.angleY) * percent;
+                setTimeout(() => {
+                    t1.setAttribute('opacity', '1');
+                    t2.setAttribute('opacity', '1');
+                    t1.setAttribute('stroke', '#64748b');
+                    t2.setAttribute('stroke', '#64748b');
+                }, 1000);
 
-            if(gameRunning && !isFinished) {
-                if (totalDistance >= trackLen - 120) {
-                    finishRace();
-                }
-
-                if(!isPaused && !isCountingDown) {
-                    const maxSpeed = 3.8 + (upgrades.speed - 1) * 0.15;
-                    const accelRate = 0.007 + (upgrades.accel - 1) * 0.002;
-                    const steerForce = 0.006 + (upgrades.steer - 1) * 0.001;
-
-                    if(keys.up) speed = Math.min(speed + accelRate, maxSpeed);
-                    else speed *= 0.993;
-
-                    if(keys.left) turning = Math.max(turning - steerForce, -0.05);
-                    else if(keys.right) turning = Math.min(turning + steerForce, 0.05);
-                    else turning *= 0.85;
-
-                    totalDistance += speed * 15;
-                    carX += (turning * speed * 4.5) - (curr.dx * 0.015 * speed);
+                setTimeout(() => {
+                    this.balance += this.carPrice;
+                    this.carsSold++;
+                    this.showNotification(`${this.currentType} Exported: +$${this.carPrice.toLocaleString()}`, "#10b981");
                     
-                    const maxRange = trackWidth/2 + 20;
-                    carX = Math.max(-maxRange, Math.min(maxRange, carX));
-
-                    const kmh = Math.floor(speed * 90);
-                    document.getElementById('speedometer').innerText = kmh.toString().padStart(3, '0');
+                    body.style.transition = "none";
+                    body.style.strokeDashoffset = "300";
+                    body.style.strokeWidth = "0.5";
+                    body.style.stroke = "currentColor";
+                    t1.setAttribute('opacity', '0.05');
+                    t2.setAttribute('opacity', '0.05');
+                    eng.setAttribute('opacity', '0');
+                    l1.setAttribute('opacity', '0');
+                    l2.setAttribute('opacity', '0');
                     
-                    let gear = 1;
-                    if (kmh > 290) gear = 6;
-                    else if (kmh > 230) gear = 5;
-                    else if (kmh > 170) gear = 4;
-                    else if (kmh > 110) gear = 3;
-                    else if (kmh > 50) gear = 2;
-                    document.getElementById('gear-display').innerText = `GEAR ${gear}`;
+                    setTimeout(() => {
+                        body.style.transition = "d 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s, stroke-dashoffset 0.7s";
+                        this.isForging = false;
+                        this.updateUI();
+                    }, 50);
+                }, 2000);
+            },
 
-                    const gearRanges = [0, 50, 110, 170, 230, 290, 450];
-                    const rangeStart = gearRanges[gear - 1];
-                    const rangeEnd = gearRanges[gear];
-                    const revPerc = ((kmh - rangeStart) / (rangeEnd - rangeStart)) * 100;
-                    document.getElementById('rev-meter').style.width = `${Math.min(100, Math.max(5, revPerc))}%`;
-                    document.getElementById('rev-meter').style.backgroundColor = revPerc > 85 ? '#ef4444' : '#10b981';
-                    
-                    const elapsed = (Date.now() - startTime) - totalPauseDuration;
-                    const s = Math.floor(elapsed/1000);
-                    const m = Math.floor(s/60);
-                    const ss = (s%60).toString().padStart(2,'0');
-                    document.getElementById('lap-timer').innerText = `${m}:${ss}`;
+            updateUI() {
+                document.getElementById('balance').textContent = `$${Math.floor(this.balance).toLocaleString()}`;
+                document.getElementById('cars-sold').textContent = this.carsSold;
 
-                    if (gameMode === 'championship') {
-                        const ahead = opponents.filter(o => o.dist > totalDistance).length;
-                        document.getElementById('position-text').innerText = `P${ahead + 1} / 8`;
+                const hasChassis = this.parts.chassis.count >= 1;
+                const hasEngine = this.parts.engine.count >= 1;
+                const hasTires = this.parts.tires.count >= 1;
+
+                for (let key in this.parts) {
+                    const count = Math.floor(this.parts[key].count);
+                    const stack = document.getElementById(`stack-${key}`);
+                    const card = document.getElementById(`card-${key}`);
+                    if (count >= 1) {
+                        stack.textContent = `${count} READY`;
+                        stack.classList.remove('hidden');
+                        card.classList.add('has-stock');
+                    } else {
+                        stack.classList.add('hidden');
+                        card.classList.remove('has-stock');
                     }
                 }
-            }
 
-            carContainer.position.set(interpX, 1, -dist);
-            carContainer.rotation.set(0, interpRotY, 0);
-            car.position.x = carX;
-            car.rotation.z = -turning * 4;
-            camera.position.x = carX * 0.4; 
-            camera.rotation.z = turning * 0.2;
+                document.getElementById('status-chassis').className = `text-[9px] font-bold px-2 py-0.5 rounded ${hasChassis ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500'}`;
+                document.getElementById('status-engine').className = `text-[9px] font-bold px-2 py-0.5 rounded ${hasEngine ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-500'}`;
+                document.getElementById('status-tires').className = `text-[9px] font-bold px-2 py-0.5 rounded ${hasTires ? 'bg-slate-500 text-white' : 'bg-slate-800 text-slate-500'}`;
 
-            segments.forEach((s, i) => {
-                let d = i - idx;
-                if(d < -totalSegments/2) d += totalSegments;
-                if(d > totalSegments/2) d -= totalSegments;
-                s.mesh.visible = (d > -5 && d < visibleRange);
-            });
+                const btn = document.getElementById('btn-forge');
+                const info = document.getElementById('forge-info');
+                const ready = hasChassis && hasEngine && hasTires && !this.isForging;
 
-            opponents.forEach(o => {
-                if(gameRunning && !isPaused && !isCountingDown && !isFinished) {
-                    if (o.currentSpeed < o.targetSpeed) o.currentSpeed += o.acceleration;
-                    o.dist += o.currentSpeed * 14.8;
+                btn.disabled = !ready;
+                if (ready) {
+                    btn.classList.add('active');
+                    btn.textContent = `Forge ${this.currentType}`;
+                    info.textContent = "Line Ready for Assembly";
+                    info.classList.replace('text-slate-500', 'text-emerald-500');
+                } else if (this.isForging) {
+                    btn.classList.remove('active');
+                    btn.textContent = "Assembling...";
+                } else {
+                    btn.classList.remove('active');
+                    btn.textContent = "Wait for Parts";
+                    info.textContent = "Missing Components";
+                    info.classList.replace('text-emerald-500', 'text-slate-500');
                 }
-                
-                const oDist = o.dist % trackLen;
-                const oIdx = Math.floor(oDist / segmentLength);
-                const oSeg = segments[oIdx];
-                const oNext = segments[(oIdx+1)%totalSegments];
-                const oPerc = (oDist % segmentLength) / segmentLength;
-                
-                o.mesh.position.set(
-                    oSeg.x + (oNext.x - oSeg.x) * oPerc + o.x,
-                    1,
-                    -oDist
-                );
-                o.mesh.rotation.y = oSeg.angleY;
-                o.mesh.visible = gameRunning;
-            });
+            },
 
-            renderer.render(scene, camera);
-        }
+            showNotification(text, color) {
+                const container = document.getElementById('notif-container');
+                const notif = document.createElement('div');
+                notif.className = 'notification';
+                notif.style.background = color;
+                notif.textContent = text;
+                container.appendChild(notif);
+                setTimeout(() => {
+                    notif.style.opacity = '0';
+                    setTimeout(() => notif.remove(), 300);
+                }, 2500);
+            }
+        };
 
-        init();
+        window.onload = () => game.init();
     </script>
 </body>
 </html>
